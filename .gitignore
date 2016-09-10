@@ -1,1 +1,3 @@
 api/venv
+api/server/__pycache__
+*.swp

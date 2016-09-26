@@ -44,3 +44,26 @@ Simulating a large playerbase to find disparities.
 ### Testing
 
 Every component will be covered with speparate tests and piped into a continuous integration system.
+
+
+
+### Setup
+
+-----------
+
+
+source the venv with:
+
+`source venv/bin/activate`
+
+Install the requirements with:
+
+`pip install -r requirements.txt`
+
+Prepare and initialize the database:
+
+`python server/data_gen.py`
+
+Start the server
+
+`python server.py`

@@ -8,7 +8,7 @@ init_db()
 app = Flask(__name__)
 api = Api(app)
 
-import pdb;pdb.set_trace()
+#import pdb;pdb.set_trace()
 
 class Server(Resource):
     def get(self):

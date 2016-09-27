@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from database import Base, db_session
 
-Transaction = Table('transaction', Base.metadata,
+transaction = Table('transaction', Base.metadata,
     Column('basegoods_id', Integer, ForeignKey('basegoods.id')),
     Column('producables_id', Integer, ForeignKey('producables.id')),
     Column('users_id', Integer, ForeignKey('users.id')),
@@ -11,7 +11,7 @@ Transaction = Table('transaction', Base.metadata,
 )
 
 
-BluePrint = Table('blueprint', Base.metadata,
+blueprint = Table('blueprint', Base.metadata,
     Column('basegoods_id', Integer, ForeignKey('basegoods.id')),
     Column('producables_id', Integer, ForeignKey('producables.id')),
     Column('quantity', Integer),
@@ -36,7 +36,7 @@ class BaseGood(Base):
     name = Column(String(50), unique=True)
     initprice = Column(Float)
     price = Column(Float)
-    producable = relationship('Producable', secondary=Transaction, backref='BaseGood')
+    producable = relationship('Producable', secondary=transaction, backref='BaseGood', lazy="dynamic")
 
     def __repr__(self):
         return '<BaseGood %r>' % (self.name)
@@ -47,8 +47,8 @@ class Producable(Base):
     name = Column(String(50), unique=True)
     price = Column(Float)
     time = Column(Integer)
-    goods = relationship('BaseGood', secondary=Transaction, backref='Producable')
-    #blueprint = relationship('BaseGood', secondary=BluePrint, backref='Producable')
+    #goods = relationship('BaseGood', secondary=transaction, backref='Producable')
+    blueprint = relationship('BaseGood', secondary=blueprint, backref='producables', lazy="dynamic")
 
     def __repr__(self):
         return '<Producable %r>' % (self.name)

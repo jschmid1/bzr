@@ -1,6 +1,6 @@
 from database import init_db, db_session
 from faker import Factory
-from models import User, BaseGood, Producable, Blueprint
+from models import User, BaseGood, Producable
 from random import randint
 
 init_db()
@@ -31,12 +31,9 @@ for prod in producables:
     # lookup in table to get the ammount and type
     # iterate over the basegoods
     # get quantity from table 
-    #import pdb; pdb.set_trace()
     prod_id = db_session.query(Producable).filter(Producable.name == prod).all()[0].id
-    
-    if db_session.query(Blueprint).filter(Blueprint).count <= 0:
-        bprd = Blueprint(basegoods_id=randint(0,len(basegoods)), producables_id=prod_id, quantity=2)
-        db_session.add(bprd)
+    basegood_id = db_session.query(BaseGood).all()[0]
+    import pdb; pdb.set_trace()
+    db_session.query(Producable).get(prod_id).blueprint.append(basegood_id)
 
 db_session.commit()
-#import pdb; pdb.set_trace()

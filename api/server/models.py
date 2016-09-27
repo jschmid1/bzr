@@ -1,21 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from database import Base, db_session
 
-transaction = Table('transaction', Base.metadata,
-    Column('basegoods_id', Integer, ForeignKey('basegoods.id')),
-    Column('producables_id', Integer, ForeignKey('producables.id')),
-    Column('users_id', Integer, ForeignKey('users.id')),
-    Column('ammount', Integer),
-    Column('action', String)
-)
-
-
-blueprint = Table('blueprint', Base.metadata,
-    Column('basegoods_id', Integer, ForeignKey('basegoods.id')),
-    Column('producables_id', Integer, ForeignKey('producables.id')),
-    Column('quantity', Integer),
-)
 
 
 class User(Base):
@@ -36,7 +22,7 @@ class BaseGood(Base):
     name = Column(String(50), unique=True)
     initprice = Column(Float)
     price = Column(Float)
-    producable = relationship('Producable', secondary=transaction, backref='BaseGood', lazy="dynamic")
+    producable = relationship('Producable', secondary='blueprints', backref='basegoods', lazy="dynamic")
 
     def __repr__(self):
         return '<BaseGood %r>' % (self.name)
@@ -48,9 +34,27 @@ class Producable(Base):
     price = Column(Float)
     time = Column(Integer)
     #goods = relationship('BaseGood', secondary=transaction, backref='Producable')
-    blueprint = relationship('BaseGood', secondary=blueprint, backref='producables', lazy="dynamic")
+    blueprint = relationship('BaseGood', secondary='blueprints', backref='producables', lazy="dynamic")
 
     def __repr__(self):
         return '<Producable %r>' % (self.name)
 
+class Transaction(Base):
+    __tablename__ = 'transactions'
+    id = Column(Integer, primary_key=True)
+    basegoods_id = Column(Integer, ForeignKey('basegoods.id'))
+    producables_id = Column(Integer, ForeignKey('producables.id'))
+    user_id = Column(Integer, ForeignKey('users.id'))
+    ammount = Column(Integer)
+    action = Column(String)
+    user = relationship(User, backref=backref("users_assoc"))
+    basegood = relationship(BaseGood, backref=backref("basegoods_assoc"))
+    producable = relationship(Producable, backref=backref("producables_assoc"))
+
+class Blueprint(Base):
+    __tablename__ = 'blueprints'
+    id = Column(Integer, primary_key=True)
+    basegood_id = Column(Integer, ForeignKey('basegoods.id'))
+    producables_id = Column(Integer, ForeignKey('producables.id'))
+    quantity = Column('quantity', Integer)
 

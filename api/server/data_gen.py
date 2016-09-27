@@ -1,6 +1,6 @@
 from database import init_db, db_session
 from faker import Factory
-from models import User, BaseGood, Producable
+from models import User, BaseGood, Producable, Blueprint, Transaction
 from random import randint
 
 init_db()
@@ -32,8 +32,9 @@ for prod in producables:
     # iterate over the basegoods
     # get quantity from table 
     prod_id = db_session.query(Producable).filter(Producable.name == prod).all()[0].id
-    basegood_id = db_session.query(BaseGood).all()[0]
-    import pdb; pdb.set_trace()
-    db_session.query(Producable).get(prod_id).blueprint.append(basegood_id)
+    basegood_id = db_session.query(BaseGood).all()[0].id
+    blueprint_one = Blueprint(basegood_id=basegood_id, producables_id=prod_id, quantity=5)
+    db_session.add(blueprint_one)
 
+import pdb;pdb.set_trace()
 db_session.commit()

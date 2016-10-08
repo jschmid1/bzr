@@ -63,14 +63,22 @@ class Producable(Base):
 class Transaction(Base):
     __tablename__ = 'transactions'
     id = Column(Integer, primary_key=True)
-    basegoods_id = Column(Integer, ForeignKey('basegoods.id'))
-    producables_id = Column(Integer, ForeignKey('producables.id'))
+    basegood_id = Column(Integer, ForeignKey('basegoods.id'))
+    producable_id = Column(Integer, ForeignKey('producables.id'))
     user_id = Column(Integer, ForeignKey('users.id'))
     ammount = Column(Integer)
     action = Column(String)
     user = relationship(User, backref=backref("users_assoc"))
     basegood = relationship(BaseGood, backref=backref("basegoods_assoc"))
     producable = relationship(Producable, backref=backref("producables_assoc"))
+
+class TransactionSchema(Schema):
+    id = fields.Int(dump_only=True)
+    basegood_id = fields.Int()
+    producable_id = fields.Int()
+    user_id = fields.Int()
+    ammount = fields.Int()
+    action = fields.Str()
 
 class Blueprint(Base):
     __tablename__ = 'blueprints'

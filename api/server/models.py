@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Table
 from sqlalchemy.orm import relationship, backref
+from marshmallow import Schema, fields
 from database import Base, db_session
 
 
@@ -15,6 +16,10 @@ class User(Base):
     def __repr__(self):
         return '<User %r>' % (self.name)
 
+class UserSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.Str()
+
 
 class BaseGood(Base):
     __tablename__ = 'basegoods'
@@ -22,10 +27,26 @@ class BaseGood(Base):
     name = Column(String(50), unique=True)
     initprice = Column(Float)
     price = Column(Float)
-    producable = relationship('Producable', secondary='blueprints', backref='basegoods', lazy="dynamic")
+    producable = relationship('Producable', secondary='blueprints', backref='basegoods', lazy="joined")
 
     def __repr__(self):
         return '<BaseGood %r>' % (self.name)
+
+class ProducableSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.Str()
+    price = fields.Float()
+    time = fields.Int()
+    basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
+    
+
+class BaseGoodSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.Str()
+    initprice = fields.Float()
+    price = fields.Float()
+    producable = fields.Nested(ProducableSchema, many=True, exclude=('basegoods', ), default=None)
+    
 
 class Producable(Base):
     __tablename__ = 'producables'
@@ -34,7 +55,7 @@ class Producable(Base):
     price = Column(Float)
     time = Column(Integer)
     #goods = relationship('BaseGood', secondary=transaction, backref='Producable')
-    blueprint = relationship('BaseGood', secondary='blueprints', backref='producables', lazy="dynamic")
+    blueprint = relationship('BaseGood', secondary='blueprints', backref='producables', lazy="joined")
 
     def __repr__(self):
         return '<Producable %r>' % (self.name)

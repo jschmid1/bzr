@@ -3,3 +3,4 @@ flask_restful
 flask_testing
 sqlalchemy
 fake-factory
+marshmallow

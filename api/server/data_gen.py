@@ -33,8 +33,12 @@ for prod in producables:
     # get quantity from table 
     prod_id = db_session.query(Producable).filter(Producable.name == prod).all()[0].id
     basegood_id = db_session.query(BaseGood).all()[0].id
+    # dummy 
     blueprint_one = Blueprint(basegood_id=basegood_id, producables_id=prod_id, quantity=5)
     db_session.add(blueprint_one)
+
+
+
 
 import pdb;pdb.set_trace()
 db_session.commit()

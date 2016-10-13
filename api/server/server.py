@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api
 from database import init_db, db_session
-from models import User, BaseGood, Producable, Transaction, UserSchema, BaseGoodSchema, ProducableSchema, TransactionSchema
+from models import User, BaseGood, Producable, Transaction, UserSchema, BaseGoodSchema, ProducableSchema, TransactionSchema, Inventory, BuildQueue
+import datetime
 
 init_db()
 
@@ -44,7 +45,7 @@ def get_producables():
     results = producables_schema.dump(producables)
     return jsonify({'producables':results.data})
 
-@app.route("/producables/<int:pr>")
+@app.route("/producables/<int:pr>", methods=['GET'])
 def get_producable(pr):
     try:
         producable = Producable.query.get(pr)
@@ -53,6 +54,35 @@ def get_producable(pr):
         return jsonify({"message": "Producable could not be found."}), 400
     result = producable_schema.dump(producable)
     return jsonify({'producable': result.data})
+
+
+@app.route("/producable/<int:pr>", methods=['POST'])
+def trigger_build(pr):
+   # dummy current_user = 1
+   current_user = User.query.get(1)
+   producable = Producable.query.get(pr) 
+   # Check the inv of current_user.
+   #import pdb;pdb.set_trace()
+   for basegood in producable.basegoods:
+       if not basegood in current_user.inventory:
+           # return Flase if inv does not contain producable.blueprint
+          # return jsonify({'message:': "Missing basegood"})
+          pass
+   for basegood in producable.basegoods:
+       # Delete from inventory
+       #current_user.inventory.remove(basegood.id)
+       pass
+   # Add to BuildQueue.
+   build_queue = BuildQueue(user_id=current_user.id, 
+              producables_id=producable.id,
+              time_start = datetime.datetime.utcnow(),
+              #o time_done = (datetime.datetime.now().time() + datetime.timedelta(minutes=producable.time)))
+              time_done = datetime.datetime.utcnow() )
+   db_session.add(build_queue)
+   db_session.commit()
+   result = producable_schema.dump(producable)
+   return jsonify({'producable': result.data})
+
 
 @app.route("/transaction/", methods=["POST"])
 def make_transaction():
@@ -68,6 +98,7 @@ def make_transaction():
     user_id = data['user_id']
     ammount = data['ammount']
     action = data['action']
+    # OR rely on inventory
     transaction = Transaction(basegood_id=basegood_id,
                   producable_id=producable_id, 
                   user_id=user_id, 
@@ -78,6 +109,7 @@ def make_transaction():
     db_session.commit()
     result = transaction_schema.dump(Transaction.query.get(transaction.id))
     return jsonify({"transaction": result.data})
+
 
 if __name__ == '__main__':
     app.run(debug=True)

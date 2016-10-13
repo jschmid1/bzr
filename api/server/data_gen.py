@@ -1,6 +1,6 @@
 from database import init_db, db_session
 from faker import Factory
-from models import User, BaseGood, Producable, Blueprint, Transaction
+from models import User, BaseGood, Producable, Blueprint, Transaction, Inventory, Season, BuildQueue
 from random import randint
 
 init_db()
@@ -38,7 +38,16 @@ for prod in producables:
     basegood_id = db_session.query(BaseGood).all()[0].id
     blueprint_one = Blueprint(basegood_id=basegood_id, producables_id=prod_id, quantity=5)
     db_session.add(blueprint_one)
-    pass
+
+for bg in basegoods:
+    if db_session.query(Inventory).filter(BaseGood.name == bg).count() == 0:
+        basegood = BaseGood.query.filter(BaseGood.name == bg).first()
+        all_users = User.query.all()
+        for user in all_users:
+            new_inv = Inventory(basegood_id=basegood_id, user=user_id, producables_id=None)
+            db_session.add(new_inv)
+
 
 import pdb;pdb.set_trace()
+
 db_session.commit()

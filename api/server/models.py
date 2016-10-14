@@ -13,6 +13,7 @@ class User(Base):
     password = Column(String(12))
     balance = Column(Float())
     inventory = relationship("Inventory", back_populates="user")
+    
 
     def extracted_inventory(self):
         return [ inv.basegood.name if inv.basegood else inv.producable.name for inv in self.inventory ]
@@ -108,9 +109,10 @@ class Inventory(Base):
     basegood_id = Column(Integer, ForeignKey('basegoods.id'))
     producables_id = Column(Integer, ForeignKey('producables.id'))
     user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", back_populates="inventory")
-    basegood = relationship("BaseGood", lazy='subquery')
-    producable = relationship(Producable, lazy='subquery')
+    # Wht is that returning a Inventory object rather than a basegood, producable
+    user = relationship("User", backref="inventory", lazy='joined')
+    basegood = relationship("BaseGsood", backref='inventory', lazy='joined')
+    producable = relationship(Producable, backref='inventory', lazy='joined')
 
     def __repr__(self):
         if self.basegood:

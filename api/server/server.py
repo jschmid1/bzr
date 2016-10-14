@@ -56,7 +56,7 @@ def get_producable(pr):
     return jsonify({'producable': result.data})
 
 
-@app.route("/producable/<int:pr>", methods=['POST'])
+@app.route("/producable/<int:pr>/produce", methods=['POST'])
 def trigger_build(pr):
    # dummy current_user = 1
    current_user = User.query.get(1)
@@ -99,6 +99,7 @@ def make_transaction():
     ammount = data['ammount']
     action = data['action']
     # OR rely on inventory
+    # Only work with inventory -> but track the transactions
     transaction = Transaction(basegood_id=basegood_id,
                   producable_id=producable_id, 
                   user_id=user_id, 
@@ -109,6 +110,58 @@ def make_transaction():
     db_session.commit()
     result = transaction_schema.dump(Transaction.query.get(transaction.id))
     return jsonify({"transaction": result.data})
+
+@app.route("/basegoods/<int:bg>/buy", methods=['POST'])
+def buy_basegood(bg):
+    current_user = User.query.get(1)
+    basegood = BaseGood.query.get(bg)
+    # check for users balance 
+    if current_user.has_enough_balance_for(basegood):
+        current_user.inventory.append(basegood)
+        # subtract the balance        
+        current_user.balance.update(1)
+        return jsonify({'message': 'bought stuff'})
+    else:
+        return jsonify({'message': 'Not enough money'})
+
+
+@app.route("/basegoods/<int:bg>/sell", methods=['POST'])
+def sell_basegood(bg):
+    current_user = User.query.get(1)
+    basegood = BaseGood.query.get(bg)
+    import pdb; pdb.set_trace()
+    if basegood in current_user.inventory:
+        current_user.inventory.remove(basegood)
+        current_user.balance.update(1)
+        return jsonify({'message': 'sold stuff'})
+    else:
+        return jsonify({'message': 'you dont have what you want to sell'})
+
+
+@app.route("/producable/<int:pr>/sell",methods=['POST'])
+def sell_producable(pr):
+    current_user = User.query.get(1)
+    producable = Producable.query.get(pr)
+    if producable in current_user.inventory:
+        current_user.inventory.remove(producable)
+        current_user.balance.update(1)
+        return jsonify({'message': 'sold stuff'})
+    else:
+        return jsonify({'message': 'you dont have what you want to sell'})
+
+
+@app.route("/producable/<int:pr>/buy", methods=['POST'])
+def buy_producable(pr):
+    current_user = User.query.get(1)
+    producable = Producable.query.get(pr)
+    # check for users balance 
+    if current_user.has_enough_balance_for(producable):
+        current_user.inventory.append(producable)
+        # subtract the balance        
+        current_user.balance.update(1)
+        return jsonify({'message': 'bought stuff'})
+    else:
+        return jsonify({'message': 'Not enough money'})
 
 
 if __name__ == '__main__':

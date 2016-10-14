@@ -13,7 +13,18 @@ class User(Base):
     password = Column(String(12))
     balance = Column(Float())
     inventory = relationship("Inventory", back_populates="user")
-    #inventory = relationship('Inventory', backref=backref("inventory_assoc"))
+
+    def extracted_inventory(self):
+        return [ inv.basegood.name if inv.basegood else inv.producable.name for inv in self.inventory ]
+
+    def has_enough_money(self, item):
+        if self.balance >= item.price:
+            return True
+        else:
+            return False
+
+    def has_enough_in_inventory(self, list_of_items):
+        pass
 
     def __repr__(self):
         return '<User %r>' % (self.name)
@@ -98,14 +109,14 @@ class Inventory(Base):
     producables_id = Column(Integer, ForeignKey('producables.id'))
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship("User", back_populates="inventory")
-    basegood = relationship(BaseGood, backref=backref("basegoods_assoc"))
-    producable = relationship(Producable, backref=backref("producables_assoc"))
+    basegood = relationship("BaseGood", lazy='subquery')
+    producable = relationship(Producable, lazy='subquery')
 
     def __repr__(self):
         if self.basegood:
-            return '<Inv %r>' % (self.basegood)
+            return '%r' % (self.basegood)
         else: 
-            return '<Inv %r>' % (self.producables)
+            return '%r' % (self.producables)
 
 # Who built what, when and when it's ready. Needs to be saved serverside
 # to avoid hax.

@@ -40,14 +40,16 @@ for prod in producables:
     db_session.add(blueprint_one)
 
 for bg in basegoods:
-    if db_session.query(Inventory).filter(BaseGood.name == bg).count() == 0:
+    if db_session.query(Inventory).filter(BaseGood.name == bg).count() <= 0:
         basegood = BaseGood.query.filter(BaseGood.name == bg).first()
         all_users = User.query.all()
         for user in all_users:
-            new_inv = Inventory(basegood_id=basegood_id, user=user_id, producables_id=None)
+            new_inv = Inventory(basegood=basegood, user=user, producables_id=None)
             db_session.add(new_inv)
 
 
-import pdb;pdb.set_trace()
+user = User.query.get(1)
+
+import ipdb;ipdb.set_trace()
 
 db_session.commit()

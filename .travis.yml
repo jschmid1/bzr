@@ -6,7 +6,6 @@ python:
   - "3.3"
   - "3.4"
 install: "pip install -r api/requirements.txt"
-# command to run tests
 script: python api/server/data_gen.py
 script: python api/server/server.py
 script: nosetests api/tests/responsetest.py

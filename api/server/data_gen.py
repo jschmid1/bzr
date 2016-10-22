@@ -1,7 +1,9 @@
 from database import init_db, db_session
 from faker import Factory
-from models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue
+from models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue, Map 
 from random import randint
+import map_gen
+import datetime
 import logger
 
 init_db()
@@ -50,8 +52,19 @@ for bg in basegoods:
             new_inv = Inventory(basegood=basegood, user_id=user.id, producable_id=None)
             db_session.add(new_inv)
 
+if Season.query.count() < 1:
+    season_one = Season(season_start=datetime.datetime.utcnow() ,season_end=datetime.datetime.utcnow())
+    db_session.add(season_one)
+    db_session.commit()
+all_users = User.query.all()
+season = Season.query.first()
+for user in all_users:
+    user.season_id = season.id
 
-user = User.query.get(1)
+if Map.query.count() < 1:
+    all_baseg = BaseGood.query.all()
+    map_o = map_gen.MapGen(season, basegoods=all_baseg)
+    map_o.generate()
 
 
 db_session.commit()

@@ -94,6 +94,8 @@ def trigger_build(pr):
 def buy_basegood(bg):
     current_user = User.query.get(1)
     basegood = BaseGood.query.get(bg)
+    _map = current_user.season.pmap
+    import pdb;pdb.set_trace()
     if current_user.has_enough_money_for(basegood):
         # and if basegood is still available -> check map_resoources
         inv = Inventory(user_id=current_user.id, basegood_id=basegood.id, producable_id=None)

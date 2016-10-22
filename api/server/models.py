@@ -13,6 +13,8 @@ class User(Base):
     password = Column(String(12))
     balance = Column(Float())
     inventory = relationship("Inventory")
+    season_id = Column(Integer, ForeignKey('seasons.id'))
+    season = relationship('Season')
 
     def inv_expanded(self):
         return [ inv.basegood if inv.basegood else inv.producable for inv in self.inventory ]
@@ -23,7 +25,7 @@ class User(Base):
         else:
             return False
 
-    def has_enough_in_inventory(self, list_of_items):
+    def has_enough_in_inventory(self, list_of_items=[]):
         pass
 
     def __repr__(self):
@@ -119,14 +121,41 @@ class BuildQueueSchema(Schema):
     time_start = fields.Date()
 
 class Season(Base):
-    __tablename__ = 'season'
+    __tablename__ = 'seasons'
     id = Column(Integer, primary_key=True)
     season_start = Column(DateTime)
     season_end = Column(DateTime)
-    user_id = Column(Integer, ForeignKey('users.id'))
+    pmap = relationship('Map')
+
+    def __repr__(self):
+        return '<Season %r>' % (self.id)
 
 class SeasonSchema(Schema):
     id = fields.Int(dump_only=True)
     user_id = fields.Int()
     season_start = fields.Date()
     season_end = fields.Date()
+
+class Map(Base):
+    __tablename__ = 'maps'
+    id = Column(Integer, primary_key=True)
+    basegood_id = Column(Integer, ForeignKey('basegoods.id'))
+    basegood = relationship('BaseGood')
+    ammount = Column(Integer)
+    season_id = Column(Integer, ForeignKey('seasons.id'))
+    season = relationship('Season')
+
+    def __repr__(self):
+        return '<Map %r>' % (self.id)
+
+class MapSchema(Schema):
+    id = fields.Int(dump_only=True)
+    basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
+    ammount = fields.Int()
+
+class Technology(Base):
+    __tablename__ = 'technologies'
+    id = Column(Integer, primary_key=True)
+
+class TechnologySchema(Schema):
+    id = fields.Int(dump_only=True)

@@ -3,3 +3,4 @@ api/server/__pycache__
 *.swp
 *.pyc
 *.db*
+*.log

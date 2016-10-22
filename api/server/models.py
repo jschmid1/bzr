@@ -12,13 +12,12 @@ class User(Base):
     email = Column(String(120), unique=True)
     password = Column(String(12))
     balance = Column(Float())
-    inventory = relationship("Inventory", back_populates="user")
-    
+    inventory = relationship("Inventory")
 
-    def extracted_inventory(self):
-        return [ inv.basegood.name if inv.basegood else inv.producable.name for inv in self.inventory ]
+    def inv_expanded(self):
+        return [ inv.basegood if inv.basegood else inv.producable for inv in self.inventory ]
 
-    def has_enough_money(self, item):
+    def has_enough_money_for(self, item):
         if self.balance >= item.price:
             return True
         else:
@@ -60,6 +59,7 @@ class BaseGoodSchema(Schema):
     name = fields.Str()
     initprice = fields.Float()
     price = fields.Float()
+    time = fields.DateTime()
     producable = fields.Nested(ProducableSchema, many=True, exclude=('basegoods', ), default=None)
     
 
@@ -69,56 +69,37 @@ class Producable(Base):
     name = Column(String(50), unique=True)
     price = Column(Float)
     time = Column(Integer)
-    #goods = relationship('BaseGood', secondary=transaction, backref='Producable')
     blueprint = relationship('BaseGood', secondary='blueprints', backref='producables', lazy="joined")
 
     def __repr__(self):
         return '<Producable %r>' % (self.name)
 
-class Transaction(Base):
-    __tablename__ = 'transactions'
-    id = Column(Integer, primary_key=True)
-    basegood_id = Column(Integer, ForeignKey('basegoods.id'))
-    producable_id = Column(Integer, ForeignKey('producables.id'))
-    user_id = Column(Integer, ForeignKey('users.id'))
-    ammount = Column(Integer)
-    action = Column(String)
-    #user = relationship(User, backref=backref("users_assoc"))
-    #basegood = relationship(BaseGood, backref=backref("basegoods_assoc"))
-    #producable = relationship(Producable, backref=backref("producables_assoc"))
-
-class TransactionSchema(Schema):
-    id = fields.Int(dump_only=True)
-    basegood_id = fields.Int()
-    producable_id = fields.Int()
-    user_id = fields.Int()
-    ammount = fields.Int()
-    action = fields.Str()
-
 class Blueprint(Base):
     __tablename__ = 'blueprints'
     id = Column(Integer, primary_key=True)
     basegood_id = Column(Integer, ForeignKey('basegoods.id'))
-    producables_id = Column(Integer, ForeignKey('producables.id'))
+    producable_id = Column(Integer, ForeignKey('producables.id'))
     quantity = Column('quantity', Integer)
 
-# OR compose via Transactions.. cleaner but maybe too heavy
 class Inventory(Base):
-    __tablename__ = 'inventory'
+    __tablename__ = 'inventorys'
     id = Column(Integer, primary_key=True)
     basegood_id = Column(Integer, ForeignKey('basegoods.id'))
-    producables_id = Column(Integer, ForeignKey('producables.id'))
+    producable_id = Column(Integer, ForeignKey('producables.id'))
     user_id = Column(Integer, ForeignKey('users.id'))
-    # Wht is that returning a Inventory object rather than a basegood, producable
-    user = relationship("User", backref="inventory", lazy='joined')
-    basegood = relationship("BaseGsood", backref='inventory', lazy='joined')
+    basegood = relationship(BaseGood, backref='inventory', lazy='joined')
     producable = relationship(Producable, backref='inventory', lazy='joined')
 
     def __repr__(self):
         if self.basegood:
             return '%r' % (self.basegood)
         else: 
-            return '%r' % (self.producables)
+            return '%r' % (self.producable)
+#TODO
+class InventorySchema(Schema):
+    id = fields.Int(dump_only=True)
+    basegood = fields.Nested(BaseGoodSchema, many=True, default=None)
+    producable = fields.Nested(ProducableSchema, many=True, default=None)
 
 # Who built what, when and when it's ready. Needs to be saved serverside
 # to avoid hax.
@@ -126,7 +107,7 @@ class BuildQueue(Base):
     __tablename__ = 'buildqueue'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
-    producables_id = Column(Integer, ForeignKey('producables.id'))
+    producable_id = Column(Integer, ForeignKey('producables.id'))
     time_done = Column(DateTime)
     time_start = Column(DateTime)
 

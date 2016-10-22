@@ -13,6 +13,7 @@ class User(Base):
     password = Column(String(12))
     balance = Column(Float())
     inventory = relationship("Inventory")
+    buildqueue = relationship("BuildQueue")
     season_id = Column(Integer, ForeignKey('seasons.id'))
     season = relationship('Season')
 
@@ -100,8 +101,8 @@ class Inventory(Base):
 #TODO
 class InventorySchema(Schema):
     id = fields.Int(dump_only=True)
-    basegood = fields.Nested(BaseGoodSchema, many=True, default=None)
-    producable = fields.Nested(ProducableSchema, many=True, default=None)
+    basegood = fields.Nested(BaseGoodSchema, exclude=('producable', ), default=None)
+    producable = fields.Nested(ProducableSchema, exclude=('basegood', ), default=None) 
 
 # Who built what, when and when it's ready. Needs to be saved serverside
 # to avoid hax.
@@ -110,13 +111,13 @@ class BuildQueue(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
     producable_id = Column(Integer, ForeignKey('producables.id'))
+    producable = relationship("Producable")
     time_done = Column(DateTime)
     time_start = Column(DateTime)
 
 class BuildQueueSchema(Schema):
     id = fields.Int(dump_only=True)
-    user_id = fields.Int()
-    producable_id = fields.Int()
+    producable = fields.Nested(ProducableSchema, exclude=('basegood', ), default=None) 
     time_done = fields.Date()
     time_start = fields.Date()
 
@@ -146,7 +147,7 @@ class Map(Base):
     season = relationship('Season')
 
     def __repr__(self):
-        return '<Map %r>' % (self.id)
+        return '<Map Info for %r>' % (self.basegood)
 
 class MapSchema(Schema):
     id = fields.Int(dump_only=True)

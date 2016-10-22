@@ -4,3 +4,6 @@ flask_testing
 sqlalchemy
 fake-factory
 marshmallow
+ipdb
+nose
+requests

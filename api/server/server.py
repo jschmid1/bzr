@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api
 from database import init_db, db_session
-from models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory,InventorySchema, BuildQueue
+from models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory,InventorySchema, BuildQueue, BuildQueueSchema
 import datetime
 import logger
 
@@ -13,21 +13,31 @@ app = Flask(__name__)
 api = Api(app)
 
 
-user_schema = UserSchema(many=True)
+users_schema = UserSchema(many=True)
+user_schema = UserSchema()
 basegoods_schema = BaseGoodSchema(many=True)
 basegood_schema = BaseGoodSchema()
 producables_schema = ProducableSchema(many=True)
 producable_schema = ProducableSchema()
 inventory_schema = InventorySchema()
+buildqueue_schema = BuildQueueSchema(many=True)
 
 @app.route('/users', methods=['GET'])
 def get_users():
     logger.log.debug("Querying all Users")
     users = User.query.all()
-    results = user_schema.dump(users)
+    results = users_schema.dump(users)
     return jsonify({'users':results.data})
 
-    
+@app.route("/users/<int:usr>")
+def get_user(usr):
+    try:
+        user = User.query.get(usr)
+    except StandardError:
+        return jsonify({"message": "User"}), 400
+    results = user_schema.dump(usr)
+    return jsonify({'user':results.data})
+
 @app.route('/basegoods', methods=['GET'])
 def get_basegoods():
     basegoods = BaseGood.query.all()
@@ -59,7 +69,6 @@ def get_producable(pr):
     result = producable_schema.dump(producable)
     return jsonify({'producable': result.data})
 
-
 @app.route("/producable/<int:pr>/produce", methods=['POST'])
 def trigger_build(pr):
    current_user = User.query.get(1)
@@ -89,15 +98,18 @@ def trigger_build(pr):
    result = producable_schema.dump(producable)
    return jsonify({'producable': result.data})
 
-
 @app.route("/basegoods/<int:bg>/buy", methods=['POST'])
 def buy_basegood(bg):
     current_user = User.query.get(1)
     basegood = BaseGood.query.get(bg)
-    _map = current_user.season.pmap
-    import pdb;pdb.set_trace()
+    pmap = current_user.season.pmap
+    # Find the map object that has pmap.basegood.name => basegood.name
+    corresp_map_object = [ map if map.basegood.name == basegood.name else None for map in pmap ][0]
     if current_user.has_enough_money_for(basegood):
         # and if basegood is still available -> check map_resoources
+        if corresp_map_object.ammount < 1: # Change when bulk buys are implemented 
+            return jsonify({'message': 'No more resources avaiable on map'})
+        corresp_map_object.ammount -= 1
         inv = Inventory(user_id=current_user.id, basegood_id=basegood.id, producable_id=None)
         current_user.inventory.append(inv)
         current_user.balance -= basegood.price
@@ -108,7 +120,6 @@ def buy_basegood(bg):
             return jsonify({'message': 'could not dump to database'})
     else:
         return jsonify({'message': 'Not enough money'})
-
 
 @app.route("/basegoods/<int:bg>/sell", methods=['POST'])
 def sell_basegood(bg):
@@ -132,7 +143,6 @@ def sell_basegood(bg):
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
 
-
 @app.route("/producable/<int:pr>/sell",methods=['POST'])
 def sell_producable(pr):
     current_user = User.query.get(1)
@@ -150,7 +160,6 @@ def sell_producable(pr):
             return jsonify({'message': 'could not dump to database'})
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
-
 
 @app.route("/producable/<int:pr>/buy", methods=['POST'])
 def buy_producable(pr):
@@ -171,18 +180,20 @@ def buy_producable(pr):
     else:
         return jsonify({'message': 'Not enough money'})
 
-@app.route("/user/<int:usr>/inventory", methods=['GET'])
+@app.route("/users/<int:usr>/inventory", methods=['GET'])
 def get_inventory(usr):
     current_user = User.query.get(usr)
-    # This doesn't seem to work yet..TODO
-    results = inventory_schema.dump(current_user.inventory)
-    #import pdb;pdb.set_trace()
+    results = inventory_schema.dump(current_user.inventory[0])
     return jsonify({'inventory': results.data})
 
+@app.route("/users/<int:usr>/buildqueue", methods=['GET'])
+def get_buildqueue(usr):
+    current_user = User.query.get(usr)
+    results = buildqueue_schema.dump(current_user.buildqueue)
+    return jsonify({'buildqueue': results.data})
 
 if __name__ == '__main__':
     app.run(debug=True)
-
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):

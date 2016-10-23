@@ -1,5 +1,7 @@
 # Bzr 
 
+[![Build Status](https://travis-ci.org/jschmid1/bzr.svg?branch=master)](https://travis-ci.org/jschmid1/bzr)
+
 Disclaimer: 
 
 That project is mainly for learning purposes.

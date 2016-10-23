@@ -3,7 +3,8 @@ python:
   - "2.7"
   - "3.3"
 install: "pip install -r api/requirements.txt"
-script: python api/server/data_gen.py
-script: python api/server/server.py
-script: nosetests api/tests/responsetest.py
+script:
+  - python api/server/data_gen.py
+  - python api/server/server.py
+  - nosetests api/tests/responsetest.py
 

@@ -51,19 +51,27 @@ Every component will be covered with speparate tests and piped into a continuous
 
 -----------
 
+create a virtualenv
 
-source the venv with:
+`virtualenv api/venv`
 
-`source venv/bin/activate`
+source the venv:
 
-Install the requirements with:
+`source api/venv/bin/activate`
 
-`pip install -r requirements.txt`
+Install the requirements:
+
+`pip install -r api/requirements.txt`
 
 Prepare and initialize the database:
 
-`python server/data_gen.py`
+`python api/server/data_gen.py`
 
 Start the server
 
-`python server.py`
+`python api/server/server.py`
+
+
+Run Tests
+
+`nosetests api/tests/responsetest.py`

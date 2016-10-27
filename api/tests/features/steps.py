@@ -2,8 +2,8 @@ from lettuce import step, world, before, after, after
 from nose.tools import assert_equals
 from api.server.server import app
 import json
-from api.server.models import BaseGood, User, Producable
-from api.server.database import init_db, db_session, db_path
+from api.database.models import BaseGood, User, Producable
+from api.database.db_init import init_db, db_session, db_path
 import sure
 import os
 

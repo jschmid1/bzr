@@ -1,6 +1,5 @@
-import logger
-from models import BaseGood, Map
-from database import init_db, db_session
+from api.database.models import BaseGood, Map
+from api.database.db_init import init_db, db_session
 
 class MapGen(object):
 

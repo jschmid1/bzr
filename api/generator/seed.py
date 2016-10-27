@@ -1,4 +1,4 @@
-from database import init_db, db_session
+from server.database import init_db, db_session
 from faker import Factory
 from models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue, Map 
 from random import randint

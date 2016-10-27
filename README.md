@@ -67,7 +67,7 @@ Install the requirements:
 
 Prepare and initialize the database:
 
-`python api/server/data_gen.py`
+`python api/generator/seed.py`
 
 Start the server
 
@@ -76,4 +76,4 @@ Start the server
 
 Run Tests
 
-`nosetests api/tests/responsetest.py`
+`lettuce api/tests/features`

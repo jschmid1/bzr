@@ -1,12 +1,13 @@
 from flask import Flask, jsonify, request, Response
 from flask_restful import Resource, Api
-from database import init_db, db_session
-from models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory,InventorySchema, BuildQueue, BuildQueueSchema
+from api.database.db_init import init_db, db_session
+from api.database.models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory, InventorySchema, BuildQueue, BuildQueueSchema
+from api.logger.logger import log
 import datetime
-import logger
 
 
-logger.log.debug("Initializing Database")
+
+log.debug("Initializing Database")
 init_db()
 
 app = Flask(__name__)
@@ -34,7 +35,7 @@ def not_found(error=None):
 
 @app.route('/users', methods=['GET'])
 def get_users():
-    logger.log.debug("Querying all Users")
+    log.debug("Querying all Users")
     users = User.query.all()
     results = users_schema.dump(users)
     return jsonify({'users':results.data})

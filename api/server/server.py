@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_restful import Resource, Api
 from database import init_db, db_session
 from models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory,InventorySchema, BuildQueue, BuildQueueSchema
@@ -22,6 +22,16 @@ producable_schema = ProducableSchema()
 inventory_schema = InventorySchema()
 buildqueue_schema = BuildQueueSchema(many=True)
 
+@app.errorhandler(404)
+def not_found(error=None):
+    message = {
+            'status': 404,
+            'message': 'Not Found: ' + request.url,
+    }
+    resp = jsonify(message)
+    resp.status_code = 404
+    return resp
+
 @app.route('/users', methods=['GET'])
 def get_users():
     logger.log.debug("Querying all Users")
@@ -29,13 +39,12 @@ def get_users():
     results = users_schema.dump(users)
     return jsonify({'users':results.data})
 
-@app.route("/users/<int:usr>")
+@app.route("/users/<int:usr>", methods=['GET'])
 def get_user(usr):
-    try:
-        user = User.query.get(usr)
-    except StandardError:
-        return jsonify({"message": "User"}), 400
-    results = user_schema.dump(usr)
+    user = User.query.get(usr)
+    if user is None:
+        return not_found()
+    results = user_schema.dump(user)
     return jsonify({'user':results.data})
 
 @app.route('/basegoods', methods=['GET'])
@@ -46,10 +55,9 @@ def get_basegoods():
 
 @app.route("/basegoods/<int:bg>")
 def get_basegood(bg):
-    try:
-        basegood = BaseGood.query.get(bg)
-    except StandardError:
-        return jsonify({"message": "Basegood could not be found."}), 400
+    basegood = BaseGood.query.get(bg)
+    if basegood is None:
+        return not_found()
     basegood_result = basegood_schema.dump(basegood)
     return jsonify({'basegood': basegood_result.data})
 
@@ -61,18 +69,20 @@ def get_producables():
 
 @app.route("/producables/<int:pr>", methods=['GET'])
 def get_producable(pr):
-    try:
-        producable = Producable.query.get(pr)
-    #TODO Replace with real error message here
-    except StandardError:
-        return jsonify({"message": "Producable could not be found."}), 400
-    result = producable_schema.dump(producable)
-    return jsonify({'producable': result.data})
+    producable = Producable.query.get(pr)
+    if producable is None:
+        return not_found()
+    else:
+	result = producable_schema.dump(producable)
+	return jsonify({'producable': result.data})
 
-@app.route("/producable/<int:pr>/produce", methods=['POST'])
+# Be RESTful here and cut the ../produce do it with PUT and args
+@app.route("/producables/<int:pr>/produce", methods=['POST'])
 def trigger_build(pr):
    current_user = User.query.get(1)
    producable = Producable.query.get(pr) 
+   if producable is None:
+       return not_found()
    inv = current_user.inv_expanded()
    for basegood in producable.basegoods:
        if basegood in inv:
@@ -98,10 +108,13 @@ def trigger_build(pr):
    result = producable_schema.dump(producable)
    return jsonify({'producable': result.data})
 
+# Be RESTful here and cut the ../buy do it with PUT and args
 @app.route("/basegoods/<int:bg>/buy", methods=['POST'])
 def buy_basegood(bg):
     current_user = User.query.get(1)
     basegood = BaseGood.query.get(bg)
+    if basegood is None:
+	return not_found()
     pmap = current_user.season.pmap
     # Find the map object that has pmap.basegood.name => basegood.name
     corresp_map_object = [ map if map.basegood.name == basegood.name else None for map in pmap ][0]
@@ -125,6 +138,8 @@ def buy_basegood(bg):
 def sell_basegood(bg):
     current_user = User.query.get(2)
     basegood = BaseGood.query.get(bg)
+    if basegood is None:
+	return not_found()
     if basegood in current_user.inv_expanded():
         inv = Inventory.query.\
                             filter(Inventory.user_id == current_user.id).\
@@ -147,6 +162,8 @@ def sell_basegood(bg):
 def sell_producable(pr):
     current_user = User.query.get(1)
     producable = Producable.query.get(pr)
+    if producable is None:
+	return not_found()
     if producable in current_user.inv_expanded():
         inv = Inventory.query.\
                             filter(Inventory.user_id == current_user.id).\
@@ -166,6 +183,8 @@ def buy_producable(pr):
     # Check for general existence.
     current_user = User.query.get(1)
     producable = Producable.query.get(pr)
+    if producable is None:
+	return not_found()
     # check for users balance 
     if current_user.has_enough_money_for(producable):
         # and if basegood is still available -> check map_resoources

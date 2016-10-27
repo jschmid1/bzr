@@ -11,8 +11,8 @@ fake = Factory.create()
 logger.log.debug("Creating Fake entries")
 
 
+# Get that from a map - separate file
 basegoods = ['Iron', 'Copper', 'Wheat', 'Wood', 'Stone', 'Sand', 'Water']
-
 producables = ['Tool', 'Road', 'Glass', 'House', 'Food']
 
 max_user = 10

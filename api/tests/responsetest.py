@@ -56,5 +56,3 @@ def test_produce():
     response = requests.post(base_url+"producable/1/produce")
     assert_true(response.ok)
 
-
-

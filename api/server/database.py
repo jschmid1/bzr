@@ -3,9 +3,12 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import os
 
-dev_db_location = os.path.dirname(os.path.realpath('__file__')) + "/db/development.db"
 
-engine = create_engine('sqlite:///'+dev_db_location, convert_unicode=True)
+env = os.environ.get("DB_ENV", "development")
+
+db_path = os.path.dirname(os.path.realpath('__file__')) + "/db/" + env + ".db"
+
+engine = create_engine('sqlite:///'+db_path, convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))

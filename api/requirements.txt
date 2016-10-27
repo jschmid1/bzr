@@ -7,3 +7,4 @@ marshmallow
 ipdb
 nose
 requests
+python-Levenshtein

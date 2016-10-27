@@ -4,8 +4,7 @@ python:
   - "3.3"
 install: "pip install -r api/requirements.txt"
 before_script:
-  - python api/server/data_gen.py
-  - python api/server/server.py&
+  - export DB_ENV=testing
 script:
-  - nosetests api/tests/responsetest.py
+  - lettuce api/tests/features/
 

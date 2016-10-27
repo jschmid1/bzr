@@ -37,7 +37,6 @@ class UserSchema(Schema):
     name = fields.Str()
     balance = fields.Float()
 
-
 class BaseGood(Base):
     __tablename__ = 'basegoods'
     id = Column(Integer, primary_key=True)

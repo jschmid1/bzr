@@ -1,0 +1,25 @@
+Basegoods:
+  - Iron
+  - Wood
+  - Oil
+  - Water
+
+Producables:
+  - Tool
+  - Machine
+  - Stuff
+
+
+Tool: 
+  - Iron: 2
+  - Wood: 1
+
+Machine:
+  - Iron: 5
+  - Water: 1
+  - Oil: 10
+  
+Stuff:
+  - Wood: 1
+
+max_users: 10

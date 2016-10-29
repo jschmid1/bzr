@@ -67,11 +67,11 @@ Install the requirements:
 
 Prepare and initialize the database:
 
-`python api/generator/seed.py`
+`python api/seed.py`
 
 Start the server
 
-`python api/server/server.py`
+`python api/server.py`
 
 
 Run Tests

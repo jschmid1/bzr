@@ -5,9 +5,9 @@ from lettuce import step, world, before, after, after
 from nose.tools import assert_equals
 from api.server import app
 from api.database.models import BaseGood, User, Producable
-from api.database.db import init_db, db_session, db_path
+from api.database.db import db_session, db_path
+from api.seed import seed_users, seed_basegoods, seed_producables, create_links
 
-init_db()
 # redirect to testing db that gets destroyed after the run.
 
 class ContextError(Exception):
@@ -20,21 +20,10 @@ def before_all():
         raise ContextError("USE DB_ENV=testing lettuce ...")
     # rather call data_gen here
     world.app = app.test_client()
-    bsg = BaseGood(name='Iron', initprice=42.2)
-    db_session.add(bsg)
-    bsg = BaseGood(name='Wood', initprice=41.1)
-    db_session.add(bsg)
-    bsg = BaseGood(name='Stone', initprice=0.0)
-    db_session.add(bsg)
-    prod = Producable(name='Tool', price=1)
-    db_session.add(prod)
-    usr = User(name='John', balance=42.2)
-    db_session.add(usr)
-    usr = User(name='Dasy', balance=41.1)
-    db_session.add(usr)
-    usr = User(name='The Dude', balance=0)
-    db_session.add(usr)
-    db_session.commit()
+    seed_users()
+    seed_basegoods()
+    seed_producables()
+    create_links()
 
 @after.all
 def after_all(total):
@@ -65,22 +54,22 @@ def given_some_basegoods_are_in_the_system(step, resource):
 @step(u'And the following basegood details are returned:')
 def and_the_following_basegood_details(step):
     payload = json.loads(world.response.data)['basegood']
-    payload.should.have.key('initprice').which.should.equal(42.2)
-    payload.should.have.key('name').which.should.equal("Iron")
-    payload.should.have.key('id').which.should.equal(1)
+    payload.should.have.key('initprice').which.should.be.an('float')
+    payload.should.have.key('name').which.should.be.an('unicode')
+    payload.should.have.key('id').which.should.be.an('int')
 
 @step(u'And the following user details are returned:')
 def and_the_following_user_details(step):
     payload = json.loads(world.response.data)['user']
-    payload.should.have.key('balance').which.should.equal(42.2)
-    payload.should.have.key('name').which.should.equal("John")
-    payload.should.have.key('id').which.should.equal(1)
+    payload.should.have.key('balance').which.should.be.a('float')
+    payload.should.have.key('name').which.should.be.an('unicode')
+    payload.should.have.key('id').which.should.be.an('int')
 
 @step(u'And the following producable details are returned:')
 def and_the_following_producable_details(step):
     payload = json.loads(world.response.data)['producable']
-    payload.should.have.key('price').which.should.equal(1.0)
-    payload.should.have.key('name').which.should.equal("Tool")
-    payload.should.have.key('id').which.should.equal(1)
+    payload.should.have.key('price').which.should.be.a('float')
+    payload.should.have.key('name').which.should.be.an('unicode')
+    payload.should.have.key('id').which.should.be.an('int')
 
 

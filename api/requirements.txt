@@ -5,6 +5,7 @@ sqlalchemy
 fake-factory
 marshmallow
 requests
+nose
 sure
 lettuce
 python-Levenshtein

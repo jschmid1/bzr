@@ -1,10 +1,10 @@
-from server.database import init_db, db_session
 from faker import Factory
-from models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue, Map 
 from random import randint
-import map_gen
+from database import *
+from models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue, Map 
+from database import map_gen
 import datetime
-import logger
+from logger import log
 
 init_db()
 fake = Factory.create()

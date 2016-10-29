@@ -7,6 +7,7 @@ import os
 env = os.environ.get("DB_ENV", "development")
 
 db_path = os.path.dirname(os.path.realpath('__file__')) + "/db/" + env + ".db"
+print db_path
 
 engine = create_engine('sqlite:///'+db_path, convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,

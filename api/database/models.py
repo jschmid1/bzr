@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship, backref
 from marshmallow import Schema, fields
-from api.database.db_init import Base, db_session
+from db import Base, db_session
 
 
 

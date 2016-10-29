@@ -1,11 +1,11 @@
-from lettuce import step, world, before, after, after
-from nose.tools import assert_equals
-from api.server.server import app
-import json
-from api.database.models import BaseGood, User, Producable
-from api.database.db_init import init_db, db_session, db_path
 import sure
 import os
+import json
+from lettuce import step, world, before, after, after
+from nose.tools import assert_equals
+from api.server import app
+from api.database.models import BaseGood, User, Producable
+from api.database.db import init_db, db_session, db_path
 
 init_db()
 # redirect to testing db that gets destroyed after the run.

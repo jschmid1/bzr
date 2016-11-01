@@ -4,6 +4,7 @@ import datetime
 from database.models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory, InventorySchema, BuildQueue, BuildQueueSchema
 from database.db import init_db, db_session
 from logger.logger import log
+import json
 
 
 
@@ -20,7 +21,7 @@ basegoods_schema = BaseGoodSchema(many=True)
 basegood_schema = BaseGoodSchema()
 producables_schema = ProducableSchema(many=True)
 producable_schema = ProducableSchema()
-inventory_schema = InventorySchema()
+inventory_schema = InventorySchema(many=True)
 buildqueue_schema = BuildQueueSchema(many=True)
 
 @app.errorhandler(404)
@@ -31,6 +32,27 @@ def not_found(error=None):
     }
     resp = jsonify(message)
     resp.status_code = 404
+    return resp
+
+# If GET instead PUT was used
+@app.errorhandler(405)
+def not_allowed(error=None):
+    message = {
+            'status': 405,
+            'message': 'Method Not Allowed: ' + request.url,
+    }
+    resp = jsonify(message)
+    resp.status_code = 405
+    return resp
+
+@app.errorhandler(403)
+def forbidden(error=None):
+    message = {
+            'status': 403,
+            'message': 'Forbidden: ' + request.url,
+    }
+    resp = jsonify(message)
+    resp.status_code = 403
     return resp
 
 @app.route('/users', methods=['GET'])
@@ -77,8 +99,7 @@ def get_producable(pr):
 	result = producable_schema.dump(producable)
 	return jsonify({'producable': result.data})
 
-# Be RESTful here and cut the ../produce do it with PUT and args
-@app.route("/producables/<int:pr>/produce", methods=['POST'])
+# Technically this should return 202-Accepted.. 
 def trigger_build(pr):
    current_user = User.query.get(1)
    producable = Producable.query.get(pr) 
@@ -89,7 +110,7 @@ def trigger_build(pr):
        if basegood in inv:
            inv.remove(basegood)
        else:
-           return jsonify({'message:': "Missing basegood"})
+           return jsonify({'message:': "Missing basegood: "})
    for basegood in producable.basegoods:
         # .delete() is designed to bulk delete
         # .limit() does not work
@@ -109,8 +130,15 @@ def trigger_build(pr):
    result = producable_schema.dump(producable)
    return jsonify({'producable': result.data})
 
-# Be RESTful here and cut the ../buy do it with PUT and args
-@app.route("/basegoods/<int:bg>/buy", methods=['POST'])
+@app.route("/basegoods/<int:bg>", methods=['PUT'])
+def handle_basegood_puts(bg):
+    if request.json['action'] == 'buy':
+        return buy_basegood(bg)
+    if request.json['action'] == 'sell':
+        return sell_basegood(bg)
+    else:
+        return not_found()
+
 def buy_basegood(bg):
     current_user = User.query.get(1)
     basegood = BaseGood.query.get(bg)
@@ -118,7 +146,7 @@ def buy_basegood(bg):
 	return not_found()
     pmap = current_user.season.pmap
     # Find the map object that has pmap.basegood.name => basegood.name
-    corresp_map_object = [ map if map.basegood.name == basegood.name else None for map in pmap ][0]
+    corresp_map_object = [ map for map in pmap if map.basegood.name == basegood.name ][0]
     if current_user.has_enough_money_for(basegood):
         # and if basegood is still available -> check map_resoources
         if corresp_map_object.ammount < 1: # Change when bulk buys are implemented 
@@ -135,9 +163,8 @@ def buy_basegood(bg):
     else:
         return jsonify({'message': 'Not enough money'})
 
-@app.route("/basegoods/<int:bg>/sell", methods=['POST'])
 def sell_basegood(bg):
-    current_user = User.query.get(2)
+    current_user = User.query.get(1)
     basegood = BaseGood.query.get(bg)
     if basegood is None:
 	return not_found()
@@ -159,7 +186,18 @@ def sell_basegood(bg):
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
 
-@app.route("/producable/<int:pr>/sell",methods=['POST'])
+@app.route("/producable/<int:pr>",methods=['PUT'])
+def handle_producable_puts(pr):
+    if request.json['action'] == 'buy':
+        return buy_producable(pr)
+    elif request.json['action'] == 'sell':
+        return sell_producable(pr)
+    elif request.json['action'] == 'produce':
+        return trigger_build(pr)
+    else:
+        return not_found()
+
+
 def sell_producable(pr):
     current_user = User.query.get(1)
     producable = Producable.query.get(pr)
@@ -179,7 +217,6 @@ def sell_producable(pr):
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
 
-@app.route("/producable/<int:pr>/buy", methods=['POST'])
 def buy_producable(pr):
     # Check for general existence.
     current_user = User.query.get(1)
@@ -194,6 +231,7 @@ def buy_producable(pr):
         try:
             db_session.commit()
             current_user.balance -= producable.price
+            db_session.commit()
             return jsonify({'message': 'bought producable'})
         except:
             return jsonify({'message': 'could not dump to database'})
@@ -203,7 +241,7 @@ def buy_producable(pr):
 @app.route("/users/<int:usr>/inventory", methods=['GET'])
 def get_inventory(usr):
     current_user = User.query.get(usr)
-    results = inventory_schema.dump(current_user.inventory[0])
+    results = inventory_schema.dump(current_user.inventory)
     return jsonify({'inventory': results.data})
 
 @app.route("/users/<int:usr>/buildqueue", methods=['GET'])

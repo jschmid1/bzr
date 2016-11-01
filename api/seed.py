@@ -29,7 +29,7 @@ def seed_users():
     # Get that from a map - separate file
 
     log.debug("Seeding Users")
-    for times in range(0,max_users):
+    for times in range(max_users):
         if db_session.query(User).count() <= max_users:
             usr = User(name=fake.name(), email=fake.email(), password=fake.state(), balance=randint(1000,9000))
             db_session.add(usr)
@@ -63,7 +63,7 @@ def create_links():
         for bg in blueprints[prod]:
             bg_name, quant = bg.items()[0] 
             basegood_o = BaseGood.query.filter(BaseGood.name == bg_name).first()
-            for i in range(0,quant):
+            for i in range(quant):
                blueprint = Blueprint(basegood_id=basegood_o.id, producable_id=prod_o.id)
                db_session.add(blueprint)
     db_session.commit()

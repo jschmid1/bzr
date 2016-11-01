@@ -30,6 +30,11 @@ def after_all(total):
     # rather than deleting it; clear the data.. 
     os.remove(db_path)
 
+@step(u'When I buy the \'(.*)\' \'(.*)\'')
+def when_i_buy_the_a_resource(step, resource, res_id):
+    import pdb;pdb.set_trace()
+    world.response = world.app.post('/{}/{}'.format(resource, res_id), data={'action': 'buy'})
+
 @step(u'When I retrieve the \'(.*)\' \'(.*)\'')
 def when_i_retrieve_the_a_resource(step, resource, res_id):
     world.response = world.app.get('/{}/{}'.format(resource, res_id))

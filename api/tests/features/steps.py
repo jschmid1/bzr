@@ -6,13 +6,12 @@ from nose.tools import assert_equals
 from api.server import app
 from api.database.models import BaseGood, User, Producable
 from api.database.db import db_session, db_path
-from api.seed import seed_users, seed_basegoods, seed_producables, create_links
+from api.seed import seed_users, seed_basegoods, seed_producables, create_links, fill_inventory, adding_seasons, adding_map
 
 # redirect to testing db that gets destroyed after the run.
 
 class ContextError(Exception):
     """Avoid deleting the development database if no Context is given"""
-    
 
 @before.all
 def before_all():
@@ -24,6 +23,9 @@ def before_all():
     seed_basegoods()
     seed_producables()
     create_links()
+    #fill_inventory()
+    adding_seasons()
+    adding_map()
 
 @after.all
 def after_all(total):
@@ -32,8 +34,7 @@ def after_all(total):
 
 @step(u'When I buy the \'(.*)\' \'(.*)\'')
 def when_i_buy_the_a_resource(step, resource, res_id):
-    import pdb;pdb.set_trace()
-    world.response = world.app.post('/{}/{}'.format(resource, res_id), data={'action': 'buy'})
+    world.response = world.app.put('/{}/{}'.format(resource, res_id), data=json.dumps({'action': 'buy'}), content_type='application/json')
 
 @step(u'When I retrieve the \'(.*)\' \'(.*)\'')
 def when_i_retrieve_the_a_resource(step, resource, res_id):
@@ -56,6 +57,26 @@ def and_i_should_get_a_list_of_users(step, resource):
 def given_some_basegoods_are_in_the_system(step, resource):
     pass
 
+@step(u'some \'(.*)\' are in the system but you dont have money')
+def given_some_resources_are_in_the_system_but_you_dont_have_money(step, resource):
+    # why no worky
+    User.query.get(1).balance = 0
+    db_session.commit()
+
+@step(u'And my inventory should contain \'(.*)\' \'(.*)\'')
+def and_my_inventory_should_contain(step, resource, res_id):
+    world.response = world.app.get('/users/1/inventory')
+    basegood_name = BaseGood.query.get(res_id).name
+    payload = json.loads(world.response.data)['inventory'][0]['basegood']
+    payload.should.have.key('name').which.should.be.equal(basegood_name)
+
+@step(u'And my inventory should not contain \'(.*)\' \'(.*)\'')
+def and_my_inventory_should_not_contain(step, resource, res_id):
+    world.response = world.app.get('/users/1/inventory')
+    basegood_name = BaseGood.query.get(res_id).name
+    payload = json.loads(world.response.data)['inventory'][0]['basegood']
+    payload.should.have.key('name').which.should_not.be.equal(basegood_name)
+
 @step(u'And the following basegood details are returned:')
 def and_the_following_basegood_details(step):
     payload = json.loads(world.response.data)['basegood']
@@ -76,5 +97,3 @@ def and_the_following_producable_details(step):
     payload.should.have.key('price').which.should.be.a('float')
     payload.should.have.key('name').which.should.be.an('unicode')
     payload.should.have.key('id').which.should.be.an('int')
-
-

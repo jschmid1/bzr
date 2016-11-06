@@ -1,4 +1,5 @@
 api/bzr
+api/venv
 api/server/__pycache__
 *.swp
 *.pyc

@@ -7,6 +7,5 @@ marshmallow
 requests
 nose
 sure
-lettuce
-python-Levenshtein
+behave
 pyyaml

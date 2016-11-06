@@ -100,6 +100,7 @@ def get_producable(pr):
 	return jsonify({'producable': result.data})
 
 # Technically this should return 202-Accepted.. 
+# because it it not finished by the time the request is processed
 def trigger_build(pr):
    current_user = User.query.get(1)
    producable = Producable.query.get(pr) 
@@ -132,12 +133,17 @@ def trigger_build(pr):
 
 @app.route("/basegoods/<int:bg>", methods=['PUT'])
 def handle_basegood_puts(bg):
-    if request.json['action'] == 'buy':
-        return buy_basegood(bg)
-    if request.json['action'] == 'sell':
-        return sell_basegood(bg)
+    print request.json
+    if request.json is not None:
+        if request.json['action'] == 'buy':
+            return buy_basegood(bg)
+        if request.json['action'] == 'sell':
+            return sell_basegood(bg)
+        else:
+            return not_found()
     else:
         return not_found()
+
 
 def buy_basegood(bg):
     current_user = User.query.get(1)
@@ -186,7 +192,7 @@ def sell_basegood(bg):
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
 
-@app.route("/producable/<int:pr>",methods=['PUT'])
+@app.route("/producables/<int:pr>", methods=['PUT'])
 def handle_producable_puts(pr):
     if request.json['action'] == 'buy':
         return buy_producable(pr)
@@ -241,12 +247,16 @@ def buy_producable(pr):
 @app.route("/users/<int:usr>/inventory", methods=['GET'])
 def get_inventory(usr):
     current_user = User.query.get(usr)
+    if current_user is None:
+        return not_found()
     results = inventory_schema.dump(current_user.inventory)
     return jsonify({'inventory': results.data})
 
 @app.route("/users/<int:usr>/buildqueue", methods=['GET'])
 def get_buildqueue(usr):
     current_user = User.query.get(usr)
+    if current_user is None:
+        return not_found()
     results = buildqueue_schema.dump(current_user.buildqueue)
     return jsonify({'buildqueue': results.data})
 

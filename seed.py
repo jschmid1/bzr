@@ -1,9 +1,9 @@
 from faker import Factory
 from random import randint
-from database.models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue, Map 
-from database.db import db_session, init_db, db_path
-from logger.logger import log
-import map_gen
+from api.database.models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue, Map 
+from api.database.db import db_session, init_db, db_path
+from api.logger.logger import log
+from api.map_gen import MapGen
 import datetime
 import yaml
 import os
@@ -61,7 +61,10 @@ def create_links():
         # get quantity from table 
         prod_o = db_session.query(Producable).filter(Producable.name == prod).first()
         for bg in blueprints[prod]:
-            bg_name, quant = bg.items()[0] 
+            #bg_name, quant = bg.items()[0] 
+            # rather stupid python3
+            bg_name = list(bg.keys())[0]
+            quant = bg[bg_name]
             basegood_o = BaseGood.query.filter(BaseGood.name == bg_name).first()
             for i in range(quant):
                blueprint = Blueprint(basegood_id=basegood_o.id, producable_id=prod_o.id)
@@ -97,7 +100,7 @@ def adding_map():
     if Map.query.count() < 1:
         all_baseg = BaseGood.query.all()
         season = Season.query.first()
-        map_o = map_gen.MapGen(season, basegoods=all_baseg)
+        map_o = MapGen(season, basegoods=all_baseg)
         map_o.generate()
 
 def seed_all():
@@ -112,5 +115,5 @@ def seed_all():
 if __name__ == "__main__":
         # execute only if run as a script
         if 'testing' in db_path or 'test' in db_path:
-            raise StandardError("Don't fill the testing Database")
+            raise ValueError("Don't fill the testing Database")
         seed_all()

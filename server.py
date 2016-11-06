@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request, Response
 from flask_restful import Resource, Api
 import datetime
-from database.models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory, InventorySchema, BuildQueue, BuildQueueSchema
-from database.db import init_db, db_session
-from logger.logger import log
+from api.database.models import User, BaseGood, Producable, UserSchema, BaseGoodSchema, ProducableSchema, Inventory, InventorySchema, BuildQueue, BuildQueueSchema
+from api.database.db import init_db, db_session
+from api.logger.logger import log
 import json
 
 
@@ -96,10 +96,11 @@ def get_producable(pr):
     if producable is None:
         return not_found()
     else:
-	result = producable_schema.dump(producable)
-	return jsonify({'producable': result.data})
+        result = producable_schema.dump(producable)
+        return jsonify({'producable': result.data})
 
 # Technically this should return 202-Accepted.. 
+# because it it not finished by the time the request is processed
 def trigger_build(pr):
    current_user = User.query.get(1)
    producable = Producable.query.get(pr) 
@@ -132,18 +133,23 @@ def trigger_build(pr):
 
 @app.route("/basegoods/<int:bg>", methods=['PUT'])
 def handle_basegood_puts(bg):
-    if request.json['action'] == 'buy':
-        return buy_basegood(bg)
-    if request.json['action'] == 'sell':
-        return sell_basegood(bg)
+    print(request.json)
+    if request.json is not None:
+        if request.json['action'] == 'buy':
+            return buy_basegood(bg)
+        if request.json['action'] == 'sell':
+            return sell_basegood(bg)
+        else:
+            return not_found()
     else:
         return not_found()
+
 
 def buy_basegood(bg):
     current_user = User.query.get(1)
     basegood = BaseGood.query.get(bg)
     if basegood is None:
-	return not_found()
+        return not_found()
     pmap = current_user.season.pmap
     # Find the map object that has pmap.basegood.name => basegood.name
     corresp_map_object = [ map for map in pmap if map.basegood.name == basegood.name ][0]
@@ -167,7 +173,7 @@ def sell_basegood(bg):
     current_user = User.query.get(1)
     basegood = BaseGood.query.get(bg)
     if basegood is None:
-	return not_found()
+         return not_found()
     if basegood in current_user.inv_expanded():
         inv = Inventory.query.\
                             filter(Inventory.user_id == current_user.id).\
@@ -186,7 +192,7 @@ def sell_basegood(bg):
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
 
-@app.route("/producable/<int:pr>",methods=['PUT'])
+@app.route("/producables/<int:pr>", methods=['PUT'])
 def handle_producable_puts(pr):
     if request.json['action'] == 'buy':
         return buy_producable(pr)
@@ -202,7 +208,7 @@ def sell_producable(pr):
     current_user = User.query.get(1)
     producable = Producable.query.get(pr)
     if producable is None:
-	return not_found()
+        return not_found()
     if producable in current_user.inv_expanded():
         inv = Inventory.query.\
                             filter(Inventory.user_id == current_user.id).\
@@ -222,7 +228,7 @@ def buy_producable(pr):
     current_user = User.query.get(1)
     producable = Producable.query.get(pr)
     if producable is None:
-	return not_found()
+          return not_found()
     # check for users balance 
     if current_user.has_enough_money_for(producable):
         # and if basegood is still available -> check map_resoources
@@ -241,12 +247,16 @@ def buy_producable(pr):
 @app.route("/users/<int:usr>/inventory", methods=['GET'])
 def get_inventory(usr):
     current_user = User.query.get(usr)
+    if current_user is None:
+        return not_found()
     results = inventory_schema.dump(current_user.inventory)
     return jsonify({'inventory': results.data})
 
 @app.route("/users/<int:usr>/buildqueue", methods=['GET'])
 def get_buildqueue(usr):
     current_user = User.query.get(usr)
+    if current_user is None:
+        return not_found()
     results = buildqueue_schema.dump(current_user.buildqueue)
     return jsonify({'buildqueue': results.data})
 

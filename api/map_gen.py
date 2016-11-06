@@ -1,5 +1,5 @@
-from database.models import BaseGood, Map
-from database.db import db_session
+from api.database.models import BaseGood, Map
+from api.database.db import db_session
 
 class MapGen(object):
 

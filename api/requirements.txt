@@ -7,6 +7,6 @@ marshmallow
 requests
 nose
 sure
-lettuce
-python-Levenshtein
+ipdb
+behave
 pyyaml

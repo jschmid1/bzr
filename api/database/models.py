@@ -1,4 +1,4 @@
-from db import Base, db_session
+from api.database.db import Base, db_session
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship, backref
 from marshmallow import Schema, fields

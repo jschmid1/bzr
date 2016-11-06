@@ -1,9 +1,9 @@
 language: python
 python:
-  - "2.7"
+  - "3.4"
 install: "pip install -r api/requirements.txt"
 before_script:
   - export DB_ENV=testing
 script:
-  - lettuce api/tests/features/
+  - behave api/tests/features/
 

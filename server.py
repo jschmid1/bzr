@@ -133,7 +133,6 @@ def trigger_build(pr):
 
 @app.route("/basegoods/<int:bg>", methods=['PUT'])
 def handle_basegood_puts(bg):
-    print(request.json)
     if request.json is not None:
         if request.json['action'] == 'buy':
             return buy_basegood(bg)

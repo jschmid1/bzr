@@ -1,6 +1,7 @@
 from behave import given, when, then, step
 import sure
 from nose.tools import assert_equals
+import time
 import os
 import json
 from api.database.models import BaseGood, User, Producable
@@ -16,6 +17,10 @@ def step_impl(context):
     create_links()
     adding_seasons()
     adding_map()
+
+@then(u'I wait for the system to catch up')
+def step_impl(context):
+    time.sleep(1)
 
 @given(u'Some users are in the system')
 def step_impl(context):
@@ -54,14 +59,34 @@ def step_impl(context, resource, res_id):
 @then(u'my inventory should contain {resource} {res_id}')
 def step_impl(context, resource, res_id):
     context.response = context.client.get('/users/1/inventory')
-    basegood_name = BaseGood.query.get(res_id).name
+    good_name = None
+    if (resource == 'producable'):
+        good_name = Producable.query.get(res_id).name
+    elif (resource == 'basegood'): 
+        good_name = BaseGood.query.get(res_id).name
+    else:
+        raise "Not implemented"
     data = context.response.data
-    payload = json.loads(data.decode('utf-8'))['inventory'][0]['basegood']
-    payload.should.have.key('name').which.should.be.equal(basegood_name)
+    print(data)
+    print(User.query.get(1).inventory)
+    payload = json.loads(data.decode('utf-8'))['inventory'][0][resource]
+    payload.should.have.key('name').which.should.be.equal(good_name)
+
+@then(u'I make sure that I have enough money')
+def step_impl(context):
+    User.query.get(1).balance = 99999
+    db_session.commit()
 
 @then(u'my inventory should not contain {resource} {res_id}')
 def step_impl(context, resource, res_id):
     context.response = context.client.get('/users/1/inventory')
+    good_name = None
+    if (resource == 'producable'):
+        good_name = Producable.query.get(res_id).name
+    elif (resource == 'basegood'): 
+        good_name = BaseGood.query.get(res_id).name
+    else:
+        raise "Not implemented"
     basegood_name = BaseGood.query.get(res_id).name
     data = context.response.data
     payload = json.loads(data.decode('utf-8'))['inventory']

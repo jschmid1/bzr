@@ -34,6 +34,16 @@ def not_found(error=None):
     resp.status_code = 404
     return resp
 
+@app.errorhandler(503)
+def service_unavailable(error=None):
+    message = {
+            'status': 503,
+            'message': 'Service Unavailable: ' + request.url,
+    }
+    resp = jsonify(message)
+    resp.status_code = 503
+    return resp
+
 # If GET instead PUT was used
 @app.errorhandler(405)
 def not_allowed(error=None):
@@ -54,6 +64,17 @@ def forbidden(error=None):
     resp = jsonify(message)
     resp.status_code = 403
     return resp
+
+@app.errorhandler(409)
+def insufficient_funds(error=None):
+    message = {
+            'status': 409,
+            'message': 'Insufficient Funds: ' + request.url,
+    }
+    resp = jsonify(message)
+    resp.status_code = 409 
+    return resp
+
 
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -111,7 +132,7 @@ def trigger_build(pr):
        if basegood in inv:
            inv.remove(basegood)
        else:
-           return jsonify({'message:': "Missing basegood: "})
+           return insufficient_funds()
    for basegood in producable.basegoods:
         # .delete() is designed to bulk delete
         # .limit() does not work
@@ -164,9 +185,9 @@ def buy_basegood(bg):
             db_session.commit()
             return jsonify({'message': 'bought stuff'})
         except:
-            return jsonify({'message': 'could not dump to database'})
+            return service_unavailabe()
     else:
-        return jsonify({'message': 'Not enough money'})
+        return insufficient_funds()
 
 def sell_basegood(bg):
     current_user = User.query.get(1)
@@ -187,7 +208,7 @@ def sell_basegood(bg):
             current_user.balance += basegood.price
             return jsonify({'message': 'sold stuff'})
         except:
-            return jsonify({'message': 'could not dump to database'})
+            return service_unavailable()
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
 
@@ -218,7 +239,7 @@ def sell_producable(pr):
             current_user.balance += producable.price
             return jsonify({'message': 'sold stuff'})
         except:
-            return jsonify({'message': 'could not dump to database'})
+            return service_unavailable()
     else:
         return jsonify({'message': 'you dont have what you want to sell'})
 
@@ -239,9 +260,9 @@ def buy_producable(pr):
             db_session.commit()
             return jsonify({'message': 'bought producable'})
         except:
-            return jsonify({'message': 'could not dump to database'})
+            return service_unavailabe()
     else:
-        return jsonify({'message': 'Not enough money'})
+        return insufficient_funds()
 
 @app.route("/users/<int:usr>/inventory", methods=['GET'])
 def get_inventory(usr):

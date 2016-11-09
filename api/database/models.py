@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship, backref
 from marshmallow import Schema, fields
 
 
-
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
@@ -32,10 +31,12 @@ class User(Base):
     def __repr__(self):
         return '<User %r>' % (self.name)
 
+
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)
     name = fields.Str()
     balance = fields.Float()
+
 
 class BaseGood(Base):
     __tablename__ = 'basegoods'
@@ -48,13 +49,22 @@ class BaseGood(Base):
     def __repr__(self):
         return '<BaseGood %r>' % (self.name)
 
+
 class ProducableSchema(Schema):
     id = fields.Int(dump_only=True)
     name = fields.Str()
     price = fields.Float()
     time = fields.Int()
+    #basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
+
+
+class BlueprintSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.Str()
+    price = fields.Float()
+    time = fields.Int()
     basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
-    
+
 
 class BaseGoodSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -62,8 +72,17 @@ class BaseGoodSchema(Schema):
     initprice = fields.Float()
     price = fields.Float()
     time = fields.DateTime()
+    #producable = fields.Nested(ProducableSchema, many=True, exclude=('basegoods', ), default=None)
+
+
+class CapabilitiesSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.Str()
+    initprice = fields.Float()
+    price = fields.Float()
+    time = fields.DateTime()
     producable = fields.Nested(ProducableSchema, many=True, exclude=('basegoods', ), default=None)
-    
+
 
 class Producable(Base):
     __tablename__ = 'producables'
@@ -76,12 +95,14 @@ class Producable(Base):
     def __repr__(self):
         return '<Producable %r>' % (self.name)
 
+
 class Blueprint(Base):
     __tablename__ = 'blueprints'
     id = Column(Integer, primary_key=True)
     basegood_id = Column(Integer, ForeignKey('basegoods.id'))
     producable_id = Column(Integer, ForeignKey('producables.id'))
     quantity = Column('quantity', Integer)
+
 
 class Inventory(Base):
     __tablename__ = 'inventorys'

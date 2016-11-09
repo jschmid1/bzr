@@ -31,8 +31,19 @@ def seed_users():
     log.debug("Seeding Users")
     for times in range(max_users):
         if db_session.query(User).count() <= max_users:
-            usr = User(name=fake.name(), email=fake.email(), password=fake.state(), balance=randint(1000,9000))
+            usr = User(name=fake.name(),
+                       email=fake.email(),
+                       password=fake.state(),
+                       balance=randint(1000, 9000))
             db_session.add(usr)
+    db_session.commit()
+
+
+def add_basegood_to_inv(user_id, bg_id):
+    user = db_session.query(User).filter(User.id == user_id).first()
+    bg = BaseGood.query.get(1)
+    new_inv = Inventory(basegood=bg, user_id=user.id, producable_id=None)
+    db_session.add(new_inv)
     db_session.commit()
 
 
@@ -40,17 +51,21 @@ def seed_basegoods():
     log.debug("Seeding Basegoods")
     for bg in basegoods:
         if db_session.query(BaseGood).filter(BaseGood.name == bg).count() == 0:
-            basegood = BaseGood(name=bg, initprice=randint(1,25), price=randint(4,59))
+            basegood = BaseGood(name=bg,
+                                initprice=randint(1, 25),
+                                price=randint(4, 59))
             db_session.add(basegood)
     db_session.commit()
+
 
 def seed_producables():
     log.debug("Seeding Producables")
     for pb in producables:
         if db_session.query(Producable).filter(Producable.name == pb).count() == 0:
-            prd = Producable(name=pb, price=randint(4,59), time=randint(100,1000))
+            prd = Producable(name=pb, price=randint(4,59), time=randint(1,10))
             db_session.add(prd)
     db_session.commit()
+
 
 def create_links():
     log.debug("Creating Blueprints")
@@ -83,10 +98,12 @@ def fill_inventory():
                 db_session.add(new_inv)
     db_session.commit()
 
+
 def adding_seasons():
     log.debug("Adding users to Season")
     if Season.query.count() < 1:
-        season_one = Season(season_start=datetime.datetime.utcnow() ,season_end=datetime.datetime.utcnow())
+        season_one = Season(season_start=datetime.datetime.utcnow(),
+                            season_end=datetime.datetime.utcnow())
         db_session.add(season_one)
         db_session.commit()
     all_users = User.query.all()
@@ -95,6 +112,7 @@ def adding_seasons():
         user.season_id = season.id
     db_session.commit()
 
+
 def adding_map():
     log.debug("Generating a map")
     if Map.query.count() < 1:
@@ -102,6 +120,7 @@ def adding_map():
         season = Season.query.first()
         map_o = MapGen(season, basegoods=all_baseg)
         map_o.generate()
+
 
 def seed_all():
         seed_users()

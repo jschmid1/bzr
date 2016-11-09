@@ -4,6 +4,7 @@ Basegoods:
   - Oil
   - Water
 
+    # missing TIME
 Producables:
   - Tool
   - Machine

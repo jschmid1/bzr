@@ -1,0 +1,62 @@
+<html>
+<head>
+    <head>
+        <title>Hello jQuery</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+</head>
+
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <style>
+  #draggable { width: 150px; height: 150px; padding: 0.5em; }
+  </style>
+<body>  
+
+<script type="text/javascript">
+        function get_all_basegoods() {
+           return  $.ajax({ 
+               type: "GET",
+               dataType: "json",
+               contentType: "application/json; charset=utf-8",
+               url: "http://localhost:5000/basegoods/1",
+           });
+        }
+        var promise = get_all_basegoods();
+        promise.success(function(output) {
+            $("#name").append(output.basegood.name);
+            $("#price").append(output.basegood.price);
+            console.log(output.basegood)
+            });
+
+$( function() {
+    $( "#draggable" ).draggable();
+});
+               
+document.body.onload = addElement;
+
+function addElement () { 
+  var i=1;
+  var basegood_count=5;
+  while(i<=basegood_count)
+  {
+      var newDiv = document.createElement("div")
+      newDiv.setAttribute('id', 'draggable'+i);
+      newDiv.setAttribute('class', 'ui-widget-content');
+      var newContent = document.createTextNode("Hi there and greetings!"); 
+      newDiv.appendChild(newContent); //add the text node to the newly created div. 
+
+      // add the newly created element and its content into the DOM 
+      var currentDiv = document.getElementById("draggable"); 
+      document.body.insertBefore(newDiv, currentDiv); 
+      i++;
+  }
+}
+</script>
+<div id="draggable" class="ui-widget-content">
+      <p id=name></p>
+      <p id=price></p>
+</div>
+
+</body>
+</html>

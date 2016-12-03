@@ -10,3 +10,4 @@ sure
 ipdb
 behave
 pyyaml
+flask_cors

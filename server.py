@@ -9,11 +9,11 @@ from api.database.models import User, BaseGood, Producable,\
                                 InventorySchema, BuildQueue,\
                                 BuildQueueSchema, BlueprintSchema,\
                                 CapabilitiesSchema
+from flask_cors import CORS, cross_origin
 
 log.debug("Initializing Database")
 init_db()
 
-from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 api = Api(app)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})

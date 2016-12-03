@@ -19,44 +19,92 @@
                type: "GET",
                dataType: "json",
                contentType: "application/json; charset=utf-8",
-               url: "http://localhost:5000/basegoods/1",
+               url: "http://localhost:5000/basegoods",
            });
         }
-        var promise = get_all_basegoods();
-        promise.success(function(output) {
-            $("#name").append(output.basegood.name);
-            $("#price").append(output.basegood.price);
-            console.log(output.basegood)
-            });
 
-$( function() {
-    $( "#draggable" ).draggable();
+        function sell_basegood(id) {
+           return  $.ajax({ 
+               type: "PUT",
+               dataType: "json",
+               data: "{ \"action\": \"sell\"}",
+               contentType: "application/json; charset=utf-8",
+               url: "http://localhost:5000/basegoods/"+id,
+           });
+        }
+        function buy_basegood(id) {
+           return  $.ajax({ 
+               type: "PUT",
+               dataType: "json",
+               data: "{ \"action\": \"buy\"}",
+               contentType: "application/json; charset=utf-8",
+               url: "http://localhost:5000/basegoods/"+id,
+           });
+        }
+
+function handle_selling(id) { 
+      $(function(){
+          var promise = sell_basegood(id);
+          promise.success(function(output) {
+              console.log(output);
+              });
+          promise.error(function(output) {
+              console.log("error:" + output);
+              });
+      });
+}
+
+function handle_buying(id) { 
+      $(function(){
+          var promise = buy_basegood(id);
+          promise.success(function(output) {
+              console.log(output);
+              });
+          promise.error(function(output) {
+              console.log("error:" + output);
+              });
+      });
+}
+
+$(document).ready(function(){
+        $("#btn").click(function() {
+            handle_selling(1);
+            alert('sold');
+            });
 });
-               
+$(document).ready(function(){
+        $("#btn2").click(function() {
+            handle_buying(1);
+            alert('bought');
+            });
+});
+
+
 document.body.onload = addElement;
 
 function addElement () { 
-  var i=1;
-  var basegood_count=5;
-  while(i<=basegood_count)
-  {
-      var newDiv = document.createElement("div")
-      newDiv.setAttribute('id', 'draggable'+i);
-      newDiv.setAttribute('class', 'ui-widget-content');
-      var newContent = document.createTextNode("Hi there and greetings!"); 
-      newDiv.appendChild(newContent); //add the text node to the newly created div. 
-
-      // add the newly created element and its content into the DOM 
-      var currentDiv = document.getElementById("draggable"); 
-      document.body.insertBefore(newDiv, currentDiv); 
-      i++;
-  }
+      $(function(){
+          var promise = get_all_basegoods();
+          promise.success(function(output) {
+              $.each( output.basegoods,function(index, item) {
+                      console.log(item);
+                      var $div = $("<div>", {id: item.id, "class": "basegood"});
+                      $($div).append("<p>"+item.name + "</p>");
+                      $($div).append("<p>"+item.price + "</p>");
+                      $('.container').append($div);
+                      $($div).draggable();
+                  });
+              });
+      });
 }
 </script>
-<div id="draggable" class="ui-widget-content">
-      <p id=name></p>
-      <p id=price></p>
+
+<div class="container">
+
 </div>
+
+<button id="btn" type="button">sell!</button> 
+<button id="btn2" type="button">buy!</button> 
 
 </body>
 </html>

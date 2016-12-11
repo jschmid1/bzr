@@ -379,6 +379,7 @@ def get_inventory(usr):
         return not_found()
     log.info("Querying inventory for user {}".format(current_user.name))
     results = inventory_schema.dump(current_user.inventory)
+    
     return jsonify({'inventory': results.data})
 
 

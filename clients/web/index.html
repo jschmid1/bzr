@@ -1,4 +1,19 @@
 <html>
+<style>
+div.container {
+    width: 100%;
+    border: 1px solid gray;
+}
+
+header, footer {
+    padding: 1em;
+    color: white;
+    background-color: black;
+    clear: left;
+    text-align: center;
+}
+
+</style>
 <head>
     <head>
         <title>Hello jQuery</title>
@@ -14,42 +29,88 @@
 <body>  
 
 <script type="text/javascript">
-        function get_all_basegoods() {
-           return  $.ajax({ 
-               type: "GET",
-               dataType: "json",
-               contentType: "application/json; charset=utf-8",
-               url: "http://localhost:5000/basegoods",
-           });
-        }
+function get_all_basegoods() {
+   return  $.ajax({ 
+       type: "GET",
+       dataType: "json",
+       contentType: "application/json; charset=utf-8",
+       url: "http://localhost:5000/basegoods",
+   });
+}
 
-        function sell_basegood(id) {
-           return  $.ajax({ 
-               type: "PUT",
-               dataType: "json",
-               data: "{ \"action\": \"sell\"}",
-               contentType: "application/json; charset=utf-8",
-               url: "http://localhost:5000/basegoods/"+id,
-           });
-        }
-        function buy_basegood(id) {
-           return  $.ajax({ 
-               type: "PUT",
-               dataType: "json",
-               data: "{ \"action\": \"buy\"}",
-               contentType: "application/json; charset=utf-8",
-               url: "http://localhost:5000/basegoods/"+id,
-           });
-        }
+function sell_basegood(id) {
+   return  $.ajax({ 
+       type: "PUT",
+       dataType: "json",
+       data: "{ \"action\": \"sell\"}",
+       contentType: "application/json; charset=utf-8",
+       url: "http://localhost:5000/basegoods/"+id,
+   });
+}
+function buy_basegood(id) {
+   return  $.ajax({ 
+       type: "PUT",
+       dataType: "json",
+       data: "{ \"action\": \"buy\"}",
+       contentType: "application/json; charset=utf-8",
+       url: "http://localhost:5000/basegoods/"+id,
+   });
+}
 
-function handle_selling(id) { 
+function get_inventory(id) {
+   return  $.ajax({ 
+       type: "GET",
+       dataType: "json",
+       contentType: "application/json; charset=utf-8",
+       url: "http://localhost:5000/users/"+id+"/inventory",
+   });
+}
+
+function get_user_info(id) {
+   return  $.ajax({ 
+       type: "GET",
+       dataType: "json",
+       contentType: "application/json; charset=utf-8",
+       url: "http://localhost:5000/users/"+id,
+   });
+}
+
+function handle_inventory(id) { 
       $(function(){
-          var promise = sell_basegood(id);
+          var promise = inventory(id);
           promise.success(function(output) {
               console.log(output);
               });
           promise.error(function(output) {
-              console.log("error:" + output);
+              console.log(output);
+              });
+      });
+}
+
+function handle_user_info(id) { 
+      $(function(){
+          var promise = get_user_info(id);
+          promise.success(function(output) {
+              console.log(output);
+              });
+          promise.error(function(output) {
+              console.log(output);
+              });
+      });
+}
+
+// API returns 409 - CONFLICT if not enough money
+// that seems not to trigger error. why?
+function handle_selling(id) { 
+      $(function(){
+          var promise = sell_basegood(id);
+          promise.success(function(output) {
+              var asd = $("#"+id+"_inv").val();
+              console.log(asd);
+              console.log(output.message);
+              });
+          promise.error(function(output) {
+              console.log(output.message);
               });
       });
 }
@@ -58,53 +119,97 @@ function handle_buying(id) {
       $(function(){
           var promise = buy_basegood(id);
           promise.success(function(output) {
-              console.log(output);
+              console.log(output.message);
               });
           promise.error(function(output) {
-              console.log("error:" + output);
+              console.log(output.message);
               });
       });
 }
 
-$(document).ready(function(){
-        $("#btn").click(function() {
-            handle_selling(1);
-            alert('sold');
-            });
-});
-$(document).ready(function(){
-        $("#btn2").click(function() {
-            handle_buying(1);
-            alert('bought');
-            });
-});
-
-
-document.body.onload = addElement;
-
-function addElement () { 
+function init_struct() { 
       $(function(){
+          var user_info = get_user_info(1)
           var promise = get_all_basegoods();
+          var inventory = get_inventory(1);
+          user_info.success(function(output) {
+              var $header = $("<header id=header>"+output.user.name+":"+ output.user.balance+ "</header>");
+              $('.container').append($header);
+          });
           promise.success(function(output) {
               $.each( output.basegoods,function(index, item) {
-                      console.log(item);
-                      var $div = $("<div>", {id: item.id, "class": "basegood"});
+                      var $div = $("<div>", {id: item.id, "class": "basegood", style:"max-width: 100px"});
                       $($div).append("<p>"+item.name + "</p>");
-                      $($div).append("<p>"+item.price + "</p>");
+                      $($div).append("<p id="+item.id+"_price"+">$: "+item.price + "</p>");
+                      inventory.success(function(output) {
+                          // refactor
+                          var len_inv=0;
+                          $.map(output.inventory, function(inner_item, inner_index ) {
+                              if(inner_item.basegood){
+                                  if(inner_item.basegood.name == item.name) {
+                                     len_inv++; 
+                                  }
+                              } else {
+                                  if(inner_item.producable.name == item.name) {
+                                     len_inv++;
+                                  }
+                              }
+                         });
+                         $($div).append("<p id="+item.id+"_inv"+">#: "+len_inv+ "</p>");
+                      });
+                      $($div).append("<button id=buy_btn"+item.id+" type=button>"+"buy"+"</button>");
+                      $($div).append("<button id=sell_btn"+item.id+" type=button>"+"sell"+"</button>");
                       $('.container').append($div);
                       $($div).draggable();
+                      $("#buy_btn"+index).on("click", function() {
+                          handle_buying(item.id);
+                      });
+                      $("#sell_btn"+index).on("click", function() {
+                          handle_selling(item.id);
+                      });
                   });
               });
+           //promise.error
       });
 }
+
+    
+setInterval("update_content();",3000);
+function update_content(){
+      var user_info = get_user_info(1)
+      var promise = get_all_basegoods();
+      var inventory = get_inventory(1);
+      user_info.success(function(output) {
+          $('#header').text(output.user.name+":"+output.user.balance);
+      });
+      promise.success(function(output) {
+          $.each( output.basegoods,function(index, item) {
+                  $('#'+item.id+"_price").text("$: "+item.price)
+                  inventory.success(function(output) {
+                      // refactor  
+                      var len_inv=0;
+                      $.map(output.inventory, function(inner_item, inner_index ) {
+                          if(inner_item.basegood){
+                              if(inner_item.basegood.name == item.name) {
+                                 len_inv++; 
+                              }
+                          } else {
+                              if(inner_item.producable.name == item.name) {
+                                 len_inv++;
+                              }
+                          }
+                     });
+                     $('#'+item.id+'_inv').text("#: "+len_inv);
+                  });
+              });
+          });
+       //promise.error handle
+}
+document.body.onload = init_struct;
 </script>
 
-<div class="container">
+<div class="container"> </div>
 
-</div>
-
-<button id="btn" type="button">sell!</button> 
-<button id="btn2" type="button">buy!</button> 
-
+<footer>Something</footer>
 </body>
 </html>

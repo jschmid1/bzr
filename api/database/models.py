@@ -162,6 +162,7 @@ class Map(Base):
     id = Column(Integer, primary_key=True)
     basegood_id = Column(Integer, ForeignKey('basegoods.id'))
     basegood = relationship('BaseGood')
+    initial_ammount = Column(Integer)
     ammount = Column(Integer)
     season_id = Column(Integer, ForeignKey('seasons.id'))
     season = relationship('Season')

@@ -18,6 +18,7 @@ class MapGen(object):
             # TODO: distribute the quota randomly and map it to absolute number
             map_o = Map(basegood_id=good.id,
                         season_id=self.season_id,
+                        initial_ammount=abs_num,
                         ammount=abs_num)
             db_session.add(map_o)
         db_session.commit()

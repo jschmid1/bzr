@@ -10,6 +10,7 @@ from api.database.models import User, BaseGood, Producable,\
                                 BuildQueueSchema, BlueprintSchema,\
                                 CapabilitiesSchema
 from flask_cors import CORS, cross_origin
+import calculations
 
 log.debug("Initializing Database")
 init_db()
@@ -265,6 +266,10 @@ def buy_basegood(bg):
             try:
                 db_session.commit()
                 results = basegood_schema.dump(basegood)
+                corresponding_map_object = [ x for x in pmap if x.id == bg ][0]
+                new_price = calculations.new_price_test1(corresponding_map_object.initial_ammount, corresponding_map_object.ammount, basegood.initprice)
+                basegood.price = new_price
+                db_session.commit()
                 return jsonify({'message': 'bought',
                                 'basegood': results.data})
             except:
@@ -298,6 +303,11 @@ def sell_basegood(bg):
                 corresp_map_object = [map_o for map_o in pmap if map_o.basegood.name == basegood.name][0]
             corresp_map_object.ammount += 1
             results = basegood_schema.dump(basegood)
+            db_session.commit()
+            corresponding_map_object = [ x for x in pmap if x.id == bg ][0]
+            new_price = calculations.new_price_test1(corresponding_map_object.initial_ammount, corresponding_map_object.ammount, basegood.initprice)
+            #import pdb; pdb.set_trace()
+            basegood.price = new_price
             db_session.commit()
             return jsonify({'message': 'sold',
                             'basegood': results.data})

@@ -1,7 +1,7 @@
 .PHONY: test 
 .PHONY: server
-.PHONY: compileC
 test:   
+	sh setup.sh
 	export DB_ENV=testing;behave -D BEHAVE_DEBUG_ON_ERROR=yes api/tests/features
 
 dev: 

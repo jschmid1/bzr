@@ -11,5 +11,6 @@ before_install:
   - sudo apt-get -y install python-dev
 install: "pip install -r api/requirements.txt"
 script:
+  - python setup.py build
   - make test
 

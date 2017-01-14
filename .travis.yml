@@ -5,6 +5,6 @@ install: "pip install -r api/requirements.txt"
 before_script:
   - export DB_ENV=testing
 script:
-  - sudo python setup.py install
+  - sudo python setup.py build 
   - behave api/tests/features/
 

@@ -1,6 +1,12 @@
 language: python
 python:
   - "3.4"
+addons:
+  apt:
+    packages:
+      - gcc-4.8
+      - python-dev
+ 
 install: "pip install -r api/requirements.txt"
 before_script:
   - export DB_ENV=testing

@@ -2,7 +2,6 @@ flask
 flask_restful
 flask_testing
 sqlalchemy
-fake-factory
 Faker
 marshmallow
 requests

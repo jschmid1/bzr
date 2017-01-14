@@ -55,15 +55,11 @@ Every component will be covered with speparate tests and piped into a continuous
 
 create a virtualenv
 
-`virtualenv api/venv`
+`virtualenv --python=3.4 api/venv`
 
 source the venv:
 
 `source api/venv/bin/activate`
-
-Install the requirements:
-
-`pip install -r api/requirements.txt`
 
 Setup a development environment:
 

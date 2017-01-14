@@ -63,6 +63,7 @@ class BlueprintSchema(Schema):
     name = fields.Str()
     price = fields.Float()
     time = fields.Int()
+    quantity = fields.Int()
     basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
 
 

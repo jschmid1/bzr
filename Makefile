@@ -7,6 +7,7 @@ test:
 dev: 
 	sh setup.sh
 	export DB_ENV=development;python seed.py
+	firefox clients/web/index.html
 	export DB_ENV=development;python server.py
 	export DB_ENV=development;python process_buildqueue.py
 

@@ -65,15 +65,14 @@ Install the requirements:
 
 `pip install -r api/requirements.txt`
 
-Prepare and initialize the database:
+Setup a development environment:
 
-`python api/seed.py`
+`make dev`
 
-Start the server
+Run tests
 
-`python api/server.py`
+`make test`
 
+Setup a production environment:
 
-Run Tests
-
-`lettuce api/tests/features`
+`make production`

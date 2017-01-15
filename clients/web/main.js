@@ -170,6 +170,9 @@ function init_struct() {
           var basegoods = get_all_basegoods();
           var producables = get_all_producables();
           var inventory = get_inventory(1);
+                
+          var $progressbar = $('<div id=progressbar></div>')
+          $('.container').append($progressbar);
           user_info.success(function(output) {
               var $header = $("<header id=header>"+output.user.name+":"+ output.user.balance+ "</header>");
               $('.container').append($header);
@@ -197,9 +200,9 @@ function init_struct() {
                       });
                       $($div).append("<button id=buy_basegood_btn"+item.id+" type=button>"+"buy"+"</button>");
                       $($div).append("<button id=sell_basegood_btn"+item.id+" type=button>"+"sell"+"</button>");
-                      $('.container').append($div);
+                      $('.basegood_container').append($div);
                       $($div).draggable();
-                      $("#buy_btn"+item.id).on("click", function() {
+                      $("#buy_basegood_btn"+item.id).on("click", function() {
                           handle_basegood_buying(item.id);
                       });
                       $("#sell_basegood_btn"+item.id).on("click", function() {
@@ -215,15 +218,11 @@ function init_struct() {
                       var $div = $("<div>", {id: item.id, "class": "producable", style:"max-width: 100px"});
                       $($div).append("<p>"+item.name + "</p>");
                       var blueprint = get_blueprint(item.id);
-                      var blueprint_array = [];
                       blueprint.success(function(output) {
                           $.each(output.producable.basegoods, function(index, item) {
-                              blueprint_array.push(item.name);
+                              $($div).append("<p id="+item.id+"_blueprint"+">BP: "+item.name + "</p>");
                           });
-                      console.log(blueprint_array)
                       });
-                      console.log(blueprint_array.toString())
-                      $($div).append("<p id="+item.id+"_blueprint"+">BP: "+blueprint_array.toString() + "</p>");
                       $($div).append("<p id="+item.id+"_prod_price"+">$: "+item.price + "</p>");
                       inventory.success(function(output) {
                           // refactor
@@ -243,7 +242,7 @@ function init_struct() {
                       });
                       $($div).append("<button id=sell_producable_btn"+item.id+" type=button>"+"sell"+"</button>");
                       $($div).append("<button id=produce_btn"+item.id+" type=button>"+"produce"+"</button>");
-                      $('.container').append($div);
+                      $('.producable_container').append($div);
                       $($div).draggable();
                       $("#produce_btn"+item.id).on("click", function() {
                           handle_producable_production(item.id);
@@ -260,13 +259,12 @@ function init_struct() {
 }
 
     
-setInterval("update_content();",10000);
+setInterval("update_content();",5000);
 function update_content(){
       var user_info = get_user_info(1)
       var basegood = get_all_basegoods();
       var producable = get_all_producables();
       var inventory = get_inventory(1);
-      console.log("updating");
       user_info.success(function(output) {
           $('#header').text(output.user.name+":"+output.user.balance);
       });

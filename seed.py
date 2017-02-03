@@ -69,22 +69,23 @@ def seed_producables():
 
 def create_links():
     log.debug("Creating Blueprints")
-    for prod in producables:
-        # find producable by name -> get id
-        # lookup in table to get the ammount and type
-        # iterate over the basegoods
-        # get quantity from table 
-        prod_o = db_session.query(Producable).filter(Producable.name == prod).first()
-        for bg in blueprints[prod]:
-            #bg_name, quant = bg.items()[0] 
-            # rather stupid python3
-            bg_name = list(bg.keys())[0]
-            quant = bg[bg_name]
-            basegood_o = BaseGood.query.filter(BaseGood.name == bg_name).first()
-            for i in range(quant):
-               blueprint = Blueprint(basegood_id=basegood_o.id, producable_id=prod_o.id)
-               db_session.add(blueprint)
-    db_session.commit()
+    if len(db_session.query(Blueprint).all()) <= 0:
+        for prod in producables:
+            # find producable by name -> get id
+            # lookup in table to get the ammount and type
+            # iterate over the basegoods
+            # get quantity from table 
+            prod_o = db_session.query(Producable).filter(Producable.name == prod).first()
+            for bg in blueprints[prod]:
+                #bg_name, quant = bg.items()[0] 
+                # rather stupid python3
+                bg_name = list(bg.keys())[0]
+                quant = bg[bg_name]
+                basegood_o = BaseGood.query.filter(BaseGood.name == bg_name).first()
+                for i in range(quant):
+                   blueprint = Blueprint(basegood_id=basegood_o.id, producable_id=prod_o.id)
+                   db_session.add(blueprint)
+        db_session.commit()
 
 
 def fill_inventory():

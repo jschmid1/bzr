@@ -109,8 +109,6 @@ def not_in_inv(error=None):
     resp = jsonify(message)
     resp.status_code = 409
     return resp
-
-
 @app.route('/users', methods=['GET'])
 def get_users():
     log.debug("Querying all Users")
@@ -135,7 +133,6 @@ def get_basegoods():
     basegoods = BaseGood.query.all()
     results = basegoods_schema.dump(basegoods)
     return jsonify({'basegoods': results.data})
-
 
 @app.route("/basegoods/<int:bg>")
 def get_basegood(bg):
@@ -175,7 +172,7 @@ def get_blueprint(pr):
         return not_found()
     else:
         log.info("Querying blueprint for producable {}".format(producable.name))
-        result = blueprint_schema.dump(producable)
+        result = basegoods_schema.dump(producable.blueprint())
         return jsonify({'producable': result.data})
 
 
@@ -306,7 +303,6 @@ def sell_basegood(bg):
             db_session.commit()
             corresponding_map_object = [ x for x in pmap if x.id == bg ][0]
             new_price = calculations.new_price_test1(corresponding_map_object.initial_ammount, corresponding_map_object.ammount, basegood.initprice)
-            #import pdb; pdb.set_trace()
             basegood.price = new_price
             db_session.commit()
             return jsonify({'message': 'sold',

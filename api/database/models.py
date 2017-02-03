@@ -60,12 +60,7 @@ class ProducableSchema(Schema):
 
 class BlueprintSchema(Schema):
     id = fields.Int(dump_only=True)
-    name = fields.Str()
-    price = fields.Float()
-    time = fields.Int()
-    quantity = fields.Int()
     basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
-
 
 class BaseGoodSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -91,18 +86,30 @@ class Producable(Base):
     name = Column(String(50), unique=True)
     price = Column(Float)
     time = Column(Integer)
-    blueprint = relationship('BaseGood', secondary='blueprints', backref='producables', lazy="joined")
+    # If .blueprint returns a blueprint object. Do it with callbacks?
+    #blueprint = relationship('BaseGood', secondary='blueprints', backref='producables', lazy="joined")
 
     def __repr__(self):
         return '<Producable %r>' % (self.name)
 
+    def blueprint_dict(self):
+        all_blueprint_entries = Blueprint.query.filter_by(producable_id=self.id).all()
+        expanded = [ x.basegood for x in all_blueprint_entries ]
+        inf = {}
+        for i in range(1, len(expanded), 1):
+           inf[BaseGood.query.filter_by(id=i).first()] = expanded.count(expanded[i])
+        return inf
+
+    def blueprint(self):
+        all_blueprint_entries = Blueprint.query.filter_by(producable_id=self.id).all()
+        return [ x.basegood for x in all_blueprint_entries ]
 
 class Blueprint(Base):
     __tablename__ = 'blueprints'
     id = Column(Integer, primary_key=True)
     basegood_id = Column(Integer, ForeignKey('basegoods.id'))
     producable_id = Column(Integer, ForeignKey('producables.id'))
-    quantity = Column('quantity', Integer)
+    basegood = relationship(BaseGood, backref='blueprint', lazy='joined')
 
 
 class Inventory(Base):

@@ -72,3 +72,20 @@ Run tests
 Setup a production environment:
 
 `make production`
+
+
+### Docker
+
+----------
+
+`docker pull postgres`
+
+`docker run --name database -e POSTGRES_PASSWORD=mysecretpassword -d postgres`
+
+`cd api/`
+`docker build -t server:latest .`
+
+`docker run --name bzr --link database:postgres -d server:latest`
+
+
+

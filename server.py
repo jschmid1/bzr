@@ -4,13 +4,18 @@ import datetime
 from api.database.db import init_db, db_session
 from api.logger.logger import log
 from api.database.models import User, BaseGood, Producable,\
+                                Technology, Event, Effect,\
                                 UserSchema, BaseGoodSchema,\
                                 ProducableSchema, Inventory,\
                                 InventorySchema, BuildQueue,\
                                 BuildQueueSchema, BlueprintSchema,\
-                                CapabilitiesSchema
+                                CapabilitiesSchema, EventSchema,\
+                                EffectSchema, TechnologySchema
 from flask_cors import CORS, cross_origin
+from multiprocess import Process
+import os
 import calculations
+import time
 
 log.debug("Initializing Database")
 init_db()
@@ -30,6 +35,12 @@ capabilities_schema = CapabilitiesSchema()
 producable_schema = ProducableSchema()
 inventory_schema = InventorySchema(many=True)
 buildqueue_schema = BuildQueueSchema(many=True)
+events_schema = EventSchema(many=True)
+event_schema = EventSchema()
+effect_schema = EffectSchema()
+effects_schema = EffectSchema(many=True)
+technology_schema = TechnologySchema()
+technologies_schema = TechnologySchema(many=True)
 
 
 @app.errorhandler(404)
@@ -109,13 +120,13 @@ def not_in_inv(error=None):
     resp = jsonify(message)
     resp.status_code = 409
     return resp
+
 @app.route('/users', methods=['GET'])
 def get_users():
     log.debug("Querying all Users")
     users = User.query.all()
     results = users_schema.dump(users)
     return jsonify({'users': results.data})
-
 
 @app.route("/users/<int:usr>", methods=['GET'])
 def get_user(usr):
@@ -126,6 +137,53 @@ def get_user(usr):
     results = user_schema.dump(user)
     return jsonify({'user': results.data})
 
+@app.route("/events/<int:evt>", methods=['GET'])
+def get_event(evt):
+    event = Event.query.get(evt)
+    log.info("Querying event")
+    if event is None:
+        return not_found()
+    results = event_schema.dump(event)
+    return jsonify({'event': results.data})
+
+@app.route("/effects/<int:efc>", methods=['GET'])
+def get_effect(efc):
+    effect = Effect.query.get(efc)
+    log.info("Querying effect")
+    if effect is None:
+        return not_found()
+    results = effect_schema.dump(effect)
+    return jsonify({'effect': results.data})
+
+@app.route('/events', methods=['GET'])
+def get_events():
+    log.info("Querying events")
+    events = Event.query.all()
+    results = events_schema.dump(events)
+    return jsonify({'events': results.data})
+
+@app.route('/effects', methods=['GET'])
+def get_effects():
+    log.info("Querying effects")
+    effects = Effect.query.all()
+    results = effects_schema.dump(effects)
+    return jsonify({'effects': results.data})
+
+@app.route("/technologies/<int:tcn>", methods=['GET'])
+def get_technology(tcn):
+    tech = Technology.query.get(tcn)
+    log.info("Querying technology")
+    if tech is None:
+        return not_found()
+    results = technology_schema.dump(tech)
+    return jsonify({'technology': results.data})
+
+@app.route('/technologies', methods=['GET'])
+def get_technologies():
+    log.info("Querying technolgies")
+    technologies = Technology.query.all()
+    results = technologies_schema.dump(technologies)
+    return jsonify({'techonologies': results.data})
 
 @app.route('/basegoods', methods=['GET'])
 def get_basegoods():
@@ -143,14 +201,12 @@ def get_basegood(bg):
     basegood_result = basegood_schema.dump(basegood)
     return jsonify({'basegood': basegood_result.data})
 
-
 @app.route('/producables', methods=['GET'])
 def get_producables():
     log.info("Querying producables")
     producables = Producable.query.all()
     results = producables_schema.dump(producables)
     return jsonify({'producables': results.data})
-
 
 @app.route("/producables/<int:pr>", methods=['GET'])
 def get_producable(pr):
@@ -161,7 +217,6 @@ def get_producable(pr):
         log.info("Querying producable")
         result = producable_schema.dump(producable)
         return jsonify({'producable': result.data})
-
 
 # Maybe I should have a separate call to retrieve the blueprints rather
 # than returning them everytime via the schema
@@ -238,6 +293,24 @@ def handle_basegood_puts(bg):
     else:
         return not_found()
 
+def calculate_new_prod_price(affected_producables=[]):
+    for pr in affected_producables:
+        unique_bg_list = pr.blueprint()
+        # reduce the list to unique items first
+        new_price = 0
+        for bg in unique_bg_list:
+            new_price += bg.price
+        try:
+            new_price_after_multi = (new_price * (pr.time - (pr.time/5)))
+            log.debug('adapted Price for {} from previous {} to {}'.format(pr.name, pr.price, new_price_after_multi))
+            # Plus some extra money that acts
+            # as salary for the 'work'
+            # this can depend on the pr.time
+            pr.price = new_price_after_multi
+            db_session.commit()
+        except:
+            log.debug('Something went wrong during the price calculation of Producables')
+
 
 def buy_basegood(bg):
     current_user = User.query.get(1)
@@ -267,6 +340,7 @@ def buy_basegood(bg):
                 new_price = calculations.new_price_test1(corresponding_map_object.initial_ammount, corresponding_map_object.ammount, basegood.initprice)
                 basegood.price = new_price
                 db_session.commit()
+                calculate_new_prod_price(basegood.producable)
                 return jsonify({'message': 'bought',
                                 'basegood': results.data})
             except:
@@ -304,6 +378,7 @@ def sell_basegood(bg):
             corresponding_map_object = [ x for x in pmap if x.id == bg ][0]
             new_price = calculations.new_price_test1(corresponding_map_object.initial_ammount, corresponding_map_object.ammount, basegood.initprice)
             basegood.price = new_price
+            calculate_new_prod_price(basegood.producable)
             db_session.commit()
             return jsonify({'message': 'sold',
                             'basegood': results.data})
@@ -369,7 +444,6 @@ def buy_producable(pr):
             current_user.balance -= producable.price
             db_session.commit()
             results = producable_schema.dump(producable)
-            db_session.commit()
             return jsonify({'message': 'bought',
                             'producable': results.data})
         except:
@@ -398,9 +472,48 @@ def get_buildqueue(usr):
     results = buildqueue_schema.dump(current_user.buildqueue)
     return jsonify({'buildqueue': results.data})
 
-if __name__ == '__main__':
+
+def info(title):
+    print(title)
+    print('module name:', __name__)
+    if hasattr(os, 'getppid'):  # only available on Unix
+        print('parent process:', os.getppid())
+    print('process id:', os.getpid())
+
+def run_server():
     app.run(debug=True)
 
+
+def process_buildqueue():
+    while(1):
+        log.debug("Checking buildqueue..")
+        queue = BuildQueue.query.all()
+        for itm in queue:
+            now = datetime.datetime.now()
+            if now >= itm.time_done:
+                inv = Inventory(basegood_id=None,
+                                producable_id=itm.producable_id,
+                                user_id=itm.user_id)
+                prod_name = Producable.query.get(itm.producable_id).name
+                user_name = User.query.get(itm.user_id).name
+                log.info("{} finished building.".format(prod_name))
+                log.info("Adding {} to {}'s inventory".format(prod_name, user_name))
+                db_session.delete(itm)
+                log.info("Deleting #{} from buildqueue".format(itm.id))
+                db_session.add(inv)
+                db_session.commit()
+        time.sleep(3)
+
+
+if __name__ == '__main__':
+    info('main line')
+    #p = Process(target=process_buildqueue)
+    #p_two = Process(target=run_server)
+    #p_two.start()
+    #p_two.join()
+    run_server()
+    #p.start()
+    #p.join()
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):

@@ -1,4 +1,3 @@
-
 function get_all_basegoods() {
    return  $.ajax({ 
        type: "GET",
@@ -96,10 +95,10 @@ function get_user_info(id) {
 function handle_user_info(id) { 
       $(function(){
           var promise = get_user_info(id);
-          promise.success(function(output) {
+          promise.done(function(output) {
               console.log(output);
               });
-          promise.error(function(output) {
+          promise.fail(function(output) {
               var msg = $.parseJSON(output.responseText).message;
               alert(msg);
               });
@@ -109,13 +108,13 @@ function handle_user_info(id) {
 function handle_basegood_selling(id) { 
       $(function(){
           var promise = sell_basegood(id);
-          promise.success(function(output) {
+          promise.done(function(output) {
               // Trying to update the id here to have immdediate response to the click event.
               // can't get the value here.. why?
               var asd = $("#"+id+"_inv").val();
               console.log(output.message);
               });
-          promise.error(function(output) {
+          promise.fail(function(output) {
               var msg = $.parseJSON(output.responseText).message;
               alert(msg);
               });
@@ -125,13 +124,13 @@ function handle_basegood_selling(id) {
 function handle_producable_selling(id) { 
       $(function(){
           var promise = sell_producable(id);
-          promise.success(function(output) {
+          promise.done(function(output) {
               // Trying to update the id here to have immdediate response to the click event.
               // can't get the value here.. why?
               var asd = $("#"+id+"_inv").val();
               console.log(output.message);
               });
-          promise.error(function(output) {
+          promise.fail(function(output) {
               var msg = $.parseJSON(output.responseText).message;
               alert(msg);
               });
@@ -141,11 +140,11 @@ function handle_producable_selling(id) {
 function handle_basegood_buying(id) { 
       $(function(){
           var promise = buy_basegood(id);
-          promise.success(function(output) {
+          promise.done(function(output) {
               var inv_count = $("#1_price").val();
               console.log("inv lenght: " + inv_count)
               });
-          promise.error(function(output) {
+          promise.fail(function(output) {
               var msg = $.parseJSON(output.responseText).message;
               alert(msg);
               });
@@ -155,13 +154,17 @@ function handle_basegood_buying(id) {
 function handle_producable_production(id) { 
       $(function(){
           var promise = produce_producable(id);
-          promise.success(function(output) {
+          promise.done(function(output) {
               });
-          promise.error(function(output) {
+          promise.fail(function(output) {
               var msg = $.parseJSON(output.responseText).message;
               alert(msg);
               });
       });
+}
+function progress(percent, $element) {
+        var progressBarWidth = percent * $element.width() / 100;
+        $element.find('div').animate({ width: progressBarWidth }, 500).html(percent + "% ");
 }
 
 function init_struct() { 
@@ -173,16 +176,20 @@ function init_struct() {
                 
           var $progressbar = $('<div id=progressbar></div>')
           $('.container').append($progressbar);
-          user_info.success(function(output) {
+          user_info.done(function(output) {
               var $header = $("<header id=header>"+output.user.name+":"+ output.user.balance+ "</header>");
               $('.container').append($header);
           });
-          basegoods.success(function(output) {
+          basegoods.done(function(output) {
               $.each(output.basegoods,function(index, item) {
+                      var $gridstackcontent = $("<div>", {id: item.id, "class": "grid-stack-item-content"}); 
+                      var $gridstackitem = $("<div>", {id: item.id, "class": "grid-stack-item", "data-gs-x": 1,"data-gs-y":0, "data-gs-width": 3, "data-gs-height": 3});
                       var $div = $("<div>", {id: item.id, "class": "basegood", style:"max-width: 100px"});
                       $($div).append("<p>"+item.name + "</p>");
                       $($div).append("<p id="+item.id+"_price"+">$: "+item.price + "</p>");
-                      inventory.success(function(output) {
+                      $($div).append("<div id=progressBar><div></div></div>");
+                      progress(75, $('#progressBar'));
+                      inventory.done(function(output) {
                           // refactor
                           var len_inv=0;
                           $.map(output.inventory, function(inner_item, inner_index ) {
@@ -200,8 +207,18 @@ function init_struct() {
                       });
                       $($div).append("<button id=buy_basegood_btn"+item.id+" type=button>"+"buy"+"</button>");
                       $($div).append("<button id=sell_basegood_btn"+item.id+" type=button>"+"sell"+"</button>");
-                      $('.basegood_container').append($div);
-                      $($div).draggable();
+
+                      $gridstackcontent.append($div)
+                      $gridstackitem.append($gridstackcontent)
+                      $('.grid-stack').append($gridstackitem);
+
+                      $(function () {
+                          var options = {
+                              cellHeight: 80,
+                              verticalMargin: 10
+                          };
+                          $('.grid-stack').gridstack(options);
+                      });
                       $("#buy_basegood_btn"+item.id).on("click", function() {
                           handle_basegood_buying(item.id);
                       });
@@ -210,21 +227,33 @@ function init_struct() {
                       });
                   });
               });
-           basegoods.error(function(output) {
+           basegoods.fail(function(output) {
                console.log(output);
            });
-          producables.success(function(output) {
+
+          producables.done(function(output) {
               $.each(output.producables,function(index, item) {
+                      var $gridstackcontent = $("<div>", {id: item.id, "class": "grid-stack-item-content"}); 
+                      var $gridstackitem = $("<div>", {id: item.id, "class": "grid-stack-item", "data-gs-x": 1,"data-gs-y":1, "data-gs-width": 3, "data-gs-height": 3});
                       var $div = $("<div>", {id: item.id, "class": "producable", style:"max-width: 100px"});
                       $($div).append("<p>"+item.name + "</p>");
                       var blueprint = get_blueprint(item.id);
-                      blueprint.success(function(output) {
-                          $.each(output.producable.basegoods, function(index, item) {
-                              $($div).append("<p id="+item.id+"_blueprint"+">BP: "+item.name + "</p>");
+                      blueprint.done(function(output) {
+                          var counts = {};
+                          for (var i = 0; i < output.producable.length; i++) {
+                              counts[output.producable[i].name] = 1 + (counts[output.producable[i].name] || 0);
+                          }
+                          basegoods.done(function(output) {
+                              $.each(output.basegoods,function(index, item) {
+                                  if (counts[item.name]) {
+                                      $($div).append("<p id="+item.id+"_blueprint>" + item.name + ":" + counts[item.name]  + "</p>");
+                                  }
+
+                              });
                           });
                       });
                       $($div).append("<p id="+item.id+"_prod_price"+">$: "+item.price + "</p>");
-                      inventory.success(function(output) {
+                      inventory.done(function(output) {
                           // refactor
                           var len_inv=0;
                           $.map(output.inventory, function(inner_item, inner_index ) {
@@ -242,8 +271,9 @@ function init_struct() {
                       });
                       $($div).append("<button id=sell_producable_btn"+item.id+" type=button>"+"sell"+"</button>");
                       $($div).append("<button id=produce_btn"+item.id+" type=button>"+"produce"+"</button>");
-                      $('.producable_container').append($div);
-                      $($div).draggable();
+                      $gridstackcontent.append($div)
+                      $gridstackitem.append($gridstackcontent)
+                      $('.grid-stack').append($gridstackitem);
                       $("#produce_btn"+item.id).on("click", function() {
                           handle_producable_production(item.id);
                       });
@@ -252,7 +282,7 @@ function init_struct() {
                       });
                   });
               });
-           producables.error(function(output) {
+           producables.fail(function(output) {
                console.log(output);
            });
       });
@@ -265,13 +295,13 @@ function update_content(){
       var basegood = get_all_basegoods();
       var producable = get_all_producables();
       var inventory = get_inventory(1);
-      user_info.success(function(output) {
+      user_info.done(function(output) {
           $('#header').text(output.user.name+":"+output.user.balance);
       });
-      basegood.success(function(output) {
+      basegood.done(function(output) {
           $.each( output.basegoods,function(index, item) {
                   $('#'+item.id+"_price").text("$: "+item.price)
-                  inventory.success(function(output) {
+                  inventory.done(function(output) {
                       // refactor  
                       var len_inv=0;
                       $.map(output.inventory, function(inner_item, inner_index ) {
@@ -289,13 +319,13 @@ function update_content(){
                   });
               });
           });
-       basegood.error(function(output) {
+       basegood.fail(function(output) {
            console.log(output)
        });
-      producable.success(function(output) {
+      producable.done(function(output) {
           $.each( output.producables,function(index, item) {
                   $('#'+item.id+"_prod_price").text("$: "+item.price)
-                  inventory.success(function(output) {
+                  inventory.done(function(output) {
                       // refactor  
                       var len_inv=0;
                       $.map(output.inventory, function(inner_item, inner_index ) {
@@ -313,7 +343,7 @@ function update_content(){
                   });
               });
           });
-       producable.error(function(output) {
+       producable.fail(function(output) {
            console.log(output)
        });
 }

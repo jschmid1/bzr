@@ -22,5 +22,58 @@ Machine:
   
 Stuff:
   - Wood: 1
+#Effects:
+#  - FastProduction:
+#      - description: that
+#      - name: that
+#  - CheaperPrices:
+#      - description: that
+#      - name: that
+#  - SlowerProduction:
+#      - description: that
+#      - name: that
+#  - HigherPrices:
+#      - description: that
+#      - name: that
+
+Effects:
+  - FastProduction
+  - CheaperPrices
+  - SlowerProduction
+  - HigherPrices
+
+Events:
+  - Rain 
+  - Snow 
+  - Wind 
+
+Rain:
+  - HigherPrices
+  - SlowerProduction
+
+Snow:
+  - HigherPrices
+  - SlowerProduction
+
+Wind: 
+  - HigherPrices
+  - SlowerProduction
+
+Technologies:
+  - Tech1
+  - Tech2
+  - Tech3
+
+Tech1:
+  - FastProduction
+  - CheaperPrices
+
+Tech2:
+  - FastProduction
+  - CheaperPrices
+
+Tech3:
+  - FastProduction
+  - CheaperPrices
 
 max_users: 10

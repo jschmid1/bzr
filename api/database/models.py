@@ -160,7 +160,7 @@ class Season(Base):
         return '<Season %r>' % (self.id)
 
 class SeasonSchema(Schema):
-    id = fields.Int(dump_only=True)
+    id = Column(Integer, primary_key=True)
     user_id = fields.Int()
     season_start = fields.Date()
     season_end = fields.Date()
@@ -186,6 +186,78 @@ class MapSchema(Schema):
 class Technology(Base):
     __tablename__ = 'technologies'
     id = Column(Integer, primary_key=True)
+    name = Column(String(200))
+    description = Column(String(500))
+    effects = relationship('Effect', secondary='event_technology', backref='technologies', lazy="joined")
+
+    def __repr__(self):
+        return '<Technology %r>' % (self.name)
 
 class TechnologySchema(Schema):
     id = fields.Int(dump_only=True)
+    name = fields.String()
+    description = fields.String()
+    effects = fields.Nested('EffectSchema', many=True, default=None)
+
+class Event(Base):
+    # An Event affects either a BaseGood or 
+    # a Producable witch an certain "Effect"
+    # But a Event can have multiple Effects
+    # -> n-m
+    __tablename__ = 'events'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200))
+    description = Column(String(500))
+    effects = relationship('Effect', secondary='effect_event', backref='events', lazy="joined")
+    def __repr__(self):
+        return '<Event %r>' % (self.name)
+
+class Effect(Base):
+    # An Effect does things like:
+    # * lower a price
+    # * accelerate the productiontime
+    # * reduce the possibilty to have a failed
+    __tablename__ = 'effects'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), unique=True)
+    description = Column(String(500))
+    # how to actually create events?
+    # callbacks? but then how to map them to the corresponding class
+    # map functions rathen then a simple name and description
+    def __repr__(self):
+        return '<Effect %r>' % (self.name)
+
+class EffectSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.String()
+    description = fields.String()
+
+class EventSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.String()
+    description = fields.String()
+    effects = fields.Nested(EffectSchema, many=True, default=None)
+
+class EffectEvent(Base):
+    __tablename__ = 'effect_event'
+    id = Column(Integer, primary_key=True)
+    ### Disabled basegood and prod for simplicity ####
+
+    #basegood_id = Column(Integer, ForeignKey('basegoods.id'))
+    #producable_id = Column(Integer, ForeignKey('producables.id'))
+
+    ### Disabled basegood and prod for simplicity ####
+    event_id = Column(Integer, ForeignKey('events.id'))
+    effect_id = Column(Integer, ForeignKey('effects.id'))
+
+class EffectTechnology(Base):
+    __tablename__ = 'event_technology'
+    id = Column(Integer, primary_key=True)
+    ### Disabled basegood and prod for simplicity ####
+
+    #basegood_id = Column(Integer, ForeignKey('basegoods.id'))
+    #producable_id = Column(Integer, ForeignKey('producables.id'))
+
+    ### Disabled basegood and prod for simplicity ####
+    technology_id = Column(Integer, ForeignKey('technologies.id'))
+    effect_id = Column(Integer, ForeignKey('effects.id'))

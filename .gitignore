@@ -2,6 +2,14 @@ api/bzr
 api/venv
 api/server/__pycache__
 *.swp
+*.swo
+*.swn
 *.pyc
 *.db*
 *.log
+.tox/
+.cache/
+MANIFEST
+junit-*.xml
+build/
+*.so

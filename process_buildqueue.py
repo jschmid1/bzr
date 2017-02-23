@@ -5,9 +5,7 @@ from api.logger.logger import log
 from api.database.models import User, Producable, Inventory, BuildQueue
 
 
-#init_db()
-# While server process is running?
-while 1:
+def process_buildqueue():
     queue = BuildQueue.query.all()
     for itm in queue:
         now = datetime.datetime.now()

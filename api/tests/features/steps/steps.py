@@ -8,6 +8,7 @@ from seed import seed_users, seed_basegoods, seed_producables, create_links, fil
 from api.database.db import db_session, db_path
 
 
+
 @given(u'The system is set up properly')
 def step_impl(context):
     seed_users()
@@ -107,6 +108,38 @@ def step_impl(context):
     User.query.get(1).balance = 99999
     db_session.commit()
 
+@then(u'I record the current price for a {}')
+def step_impl(context, resource):
+    # record the price before and after?
+    # how to globally save them
+    if resource == "producable":
+        context.pr_price = Producable.query.get(1).price
+    elif resource == "basegood":
+        context.bg_price = BaseGood.query.get(1).price
+    else:
+        raise StandardError
+
+@then(u'the price should be higher than before')
+def step_impl(context):
+    bg = BaseGood.query.get(1)
+    bg.price.should.be.greater_than(context.old_price)
+
+@then(u'the connected producables should be more expensive')
+def step_impl(context):
+    pr = Producable.query.get(1)
+    pr.price.should.be.greater_than(context.old_pr_price)
+
+@then(u'the connected producables should have the same price')
+def step_impl(context):
+    pr = Producable.query.get(1)
+    pr.price.should.equal(context.old_pr_price)
+
+@then(u'the price should be the same')
+def step_impl(context):
+    # record the price before and after?
+    bg = BaseGood.query.get(1)
+    bg.price.shouldnt.be.greater_than(context.old_price)
+    bg.price.should.equal(context.old_price)
 
 @then(u'my inventory should not contain {resource} {res_id}')
 def step_impl(context, resource, res_id):
@@ -120,6 +153,11 @@ def step_impl(context, resource, res_id):
 def step_impl(context, expected_status_code):
     context.response.status_code.should.eql(int(expected_status_code))
 
+@then(u'I see a list of basegoods in {outer}')
+def step_impl(context, outer):
+    data = context.response.data
+    payload = json.loads(data.decode('utf-8'))[outer]
+    payload.should.be.a(list)
 
 @then(u'I see a nested list of {resources} in {outer}')
 def step_impl(context, resources, outer):
@@ -173,7 +211,7 @@ def step_impl(context, res_id):
 @then(u'I buy all the needed basegoods for producable {res_id}')
 def step_impl(context, res_id):
     pr = Producable.query.get(res_id)
-    for bg in pr.blueprint:
+    for bg in pr.blueprint():
         context.response = context.client.put('/basegoods/{}'.format(bg.id),
                                               data=json.dumps({'action': 'buy'}),
                                               content_type='application/json')

@@ -155,6 +155,7 @@ function handle_producable_production(id) {
       $(function(){
           var promise = produce_producable(id);
           promise.done(function(output) {
+              progress($('#pr' + id + ' .progressbar'), output.producable.time, id); //jquery pseudo selector :last oder so
               });
           promise.fail(function(output) {
               var msg = $.parseJSON(output.responseText).message;
@@ -162,9 +163,12 @@ function handle_producable_production(id) {
               });
       });
 }
-function progress(percent, $element) {
-        var progressBarWidth = percent * $element.width() / 100;
-        $element.find('div').animate({ width: progressBarWidth }, 500).html(percent + "% ");
+function progress($element, duration, id) {
+        console.log(duration)
+        $element.find('div').animate({ width: $element.width() }, {queue: false, duration: (duration*60), complete: function () {
+                        console.log("hiding")
+                      $("#pr" + id + " #progressbar").hide();
+                }});
 }
 
 function init_struct() { 
@@ -174,8 +178,7 @@ function init_struct() {
           var producables = get_all_producables();
           var inventory = get_inventory(1);
                 
-          var $progressbar = $('<div id=progressbar></div>')
-          $('.container').append($progressbar);
+          var $progressbar = '<div class="progressbar"><div></div></div>';
           user_info.done(function(output) {
               var $header = $("<header id=header>"+output.user.name+":"+ output.user.balance+ "</header>");
               $('.container').append($header);
@@ -187,8 +190,6 @@ function init_struct() {
                       var $div = $("<div>", {id: item.id, "class": "basegood", style:"max-width: 100px"});
                       $($div).append("<p>"+item.name + "</p>");
                       $($div).append("<p id="+item.id+"_price"+">$: "+item.price + "</p>");
-                      $($div).append("<div id=progressBar><div></div></div>");
-                      progress(75, $('#progressBar'));
                       inventory.done(function(output) {
                           // refactor
                           var len_inv=0;
@@ -233,10 +234,11 @@ function init_struct() {
 
           producables.done(function(output) {
               $.each(output.producables,function(index, item) {
-                      var $gridstackcontent = $("<div>", {id: item.id, "class": "grid-stack-item-content"}); 
-                      var $gridstackitem = $("<div>", {id: item.id, "class": "grid-stack-item", "data-gs-x": 1,"data-gs-y":1, "data-gs-width": 3, "data-gs-height": 3});
-                      var $div = $("<div>", {id: item.id, "class": "producable", style:"max-width: 100px"});
+                      var $gridstackcontent = $("<div>", {"class": "grid-stack-item-content"}); 
+                      var $gridstackitem = $("<div>", {"class": "grid-stack-item", "data-gs-x": 1,"data-gs-y":1, "data-gs-width": 3, "data-gs-height": 3});
+                      var $div = $("<div>", {id: 'pr'+item.id, "class": "producable", style:"max-width: 100px"});
                       $($div).append("<p>"+item.name + "</p>");
+                      $($div).append($progressbar);
                       var blueprint = get_blueprint(item.id);
                       blueprint.done(function(output) {
                           var counts = {};

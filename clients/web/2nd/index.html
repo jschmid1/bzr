@@ -9,109 +9,119 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   <!-- Latest compiled and minified JavaScript -->
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <script src="main.js"></script>
-     <title>cartel</title>
+  <title>cartel</title>
 </head>
 <body>
-    <div id="container"> </div>
+<div id="container"> </div>
+
 <style type="text/css">
 
-.header {
-    background: #eeeeff;
+  #header {
+    background-color: #efefef;
     position: absolute;
     width: 100%;
-    height: 50px;
+    height: 60px;
     top: 0;
     z-index: 1;
     text-align: center;
-}
+  }
 
-#container  {
+  #container  {
     margin-top: 50px;
 
-}
-*[id^='basegood']  {
-    display: flex;
+  }
+  *[id^='basegood_']  {
+    float:left;
     margin-top: 50px;
-}
+  }
 
-*[id^='producable']  {
-    display: flex;
+  *[id^='producable_']  {
+    float: right;
     margin-top: 50px;
-}
-.footer {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 1rem;
-  background-color: #efefef;
-  text-align: center;
-}
-.progress-bar {
+  }
+  .footer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 1rem;
+    background-color: #efefef;
+    text-align: center;
+  }
+  .progress-bar {
     -webkit-transition: none !important;
     transition: none !important;
-}
+  }
 
 </style>
 
-  <script id="basegood" type="text/x-jsrender">
-    <div id=basegood{{:id }}>
+<script id="basegood" type="text/x-jsrender">
+    <div id=basegood_{{:id }}>
     <div class="panel panel-default">
     <div class="panel-heading">{{:name}}</div>
     <div class="panel-body">
-         <p id={{:id}}_price>$: {{:price}}</p>
-         <p id={{:id}}_inv>#: {{:inv_len}}</p>
+         <div class="glyphicon glyphicon glyphicon-usd" aria-hidden="true" id=base_price_{{:id}}>{{:price}}</div><br>
+         <div class="glyphicon glyphicon glyphicon-pushpin" aria-hidden="true"id=base_inv_{{:id}}>{{:ammount}}</div><br>
          <div class="btn-group" role="group" aria-label="...">
-           <button id=sell_basegood_btn{{:id}} type="button" class="btn btn-default">Sell</button>
-           <button id=buy_basegood_btn{{:id}} type="button" class="btn btn-default">Buy</button>
+           <button id=sell_basegood_btn_{{:id}} type="button" class="btn btn-default">Sell</button>
+           <button id=buy_basegood_btn_{{:id}} type="button" class="btn btn-default">Buy</button>
          </div>
     </div>
     </div>
   </script>
 
-  <script id="producable" type="text/x-jsrender">
-    <div id=producable{{:id }}>
+<script id="producable" type="text/x-jsrender">
+    <div id=producable_{{:id }}>
     <div class="panel panel-default">
     <div class="panel-heading">{{:name}}</div>
     <div class="panel-body">
-         <p id={{:id}}prod_price>$: {{:price}}</p>
-         <p id={{:id}}_inv>#: {{:ammount}}</p>
-         <p>Blueprint:</p>
-         {{for blueprints }}
-         <li> 
-            {{:name}}: {{:ammount}}
-         {{/for}}
-         </li>
+         <div class="glyphicon glyphicon glyphicon-usd" aria-hidden="true" id=prod_price_{{:id}}>{{:price}}</div><br>
+         <div class="glyphicon glyphicon glyphicon-pushpin" aria-hidden="true" id=prod_inv_{{:id}}>{{:ammount}}</div><br>
+         <div class="glyphicon glyphicon glyphicon-hourglass" aria-hidden="true" id=prod_time{{:id}}>{{:time}}</div><br>
+         <div class="glyphicon glyphicon-triangle-right" aria-hidden="true" id=inqueue_{{:id}}>{{:buildqueuecount}}</div><br>
+          {{for blueprint }}
+          <li>
+          {{:name}}: {{:ammount}}
+          </li>
+        {{/for}}
          <div class="btn-group" role="group" aria-label="...">
-           <button id=sell_producable_btn{{:id}} type="button" class="btn btn-default">Sell</button>
-           <button id=produce_btn{{:id}} type="button" class="btn btn-default">Produce</button>
+           <button id=sell_producable_btn_{{:id}} type="button" class="btn btn-default">Sell</button>
+           <button id=produce_btn_{{:id}} type="button" class="btn btn-default">Produce</button>
          </div>
-        <div class="progress">
-          <div id=pr{{:id}} class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-            <span class="sr-only">0% Complete</span>
-          </div>
-        </div>
+
     </div>
     </div>
   </script>
-  <script id="header" type="text/x-jsrender">
-    <div id=header class="page-header">
+
+
+<script id="buildqueue" type="text/x-jsrender">
+<div class="progress">
+    <div id=pr_{{:id}}_{{:bqid }} class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+        <span class="sr-only">0% Complete</span>
+    </div>
+</div>
+</script>
+
+
+<script id="header" type="text/x-jsrender">
+    <div id=header class="header">
      <h1> {{:name}} - {{:balance}} </h1>
     </div>
   </script>
 
-  <script id="footer" type="text/x-jsrender">
+<script id="footer" type="text/x-jsrender">
     <div id=footer class="footer">
-     <h1> {{:name}} - {{:balance}} </h1>
+     <h1> {{:author}} </h1>
     </div>
   </script>
 
-  <script id="alert" type="text/x-jsrender">
-     <div class="alert alert-warning" role="alert">
-         {{:message}} 
-    </div>
-  </script>
+<script id="alert" type="text/x-jsrender">
+     <div class="alert alert-warning alert-dismissible" role="alert">
+        {{:message}}
+     </div>
+</script>
 
 </body>
 </html>

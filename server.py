@@ -218,8 +218,6 @@ def get_producable(pr):
         result = producable_schema.dump(producable)
         return jsonify({'producable': result.data})
 
-# Maybe I should have a separate call to retrieve the blueprints rather
-# than returning them everytime via the schema
 @app.route("/producables/<int:pr>/blueprint")
 def get_blueprint(pr):
     producable = Producable.query.get(pr)
@@ -227,8 +225,12 @@ def get_blueprint(pr):
         return not_found()
     else:
         log.info("Querying blueprint for producable {}".format(producable.name))
-        result = basegoods_schema.dump(producable.blueprint())
-        return jsonify({'producable': result.data})
+        result = producable.blueprint_dict()
+        ret = {} 
+        ret_arr = []
+        for key, value in result.items():
+            ret_arr.append({'basegood': basegood_schema.dump(key).data, 'ammount': value})
+        return jsonify(ret_arr)
 
 
 @app.route("/basegoods/<int:bg>/capabilities")
@@ -251,12 +253,14 @@ def trigger_build(pr):
         return not_found()
     log.info("Triggering build for {}".format(producable.name))
     inv = current_user.inv_expanded()
-    for basegood in producable.basegoods:
+    for basegood in producable.blueprint():
         if basegood in inv:
+            # dont know if thats the best option ?
+            # just count the respective len and ask the DB
             inv.remove(basegood)
         else:
             return insufficient_funds()
-    for basegood in producable.basegoods:
+    for basegood in producable.blueprint():
         # .delete() is designed to bulk delete
         # .limit() does not work
         # .first() does not work
@@ -462,16 +466,49 @@ def get_inventory(usr):
     
     return jsonify({'inventory': results.data})
 
+@app.route("/users/<int:usr>/inventory/basegood/<int:bg>", methods=['GET'])
+def get_inventory_for_basegood(usr, bg):
+    current_user = User.query.get(usr)
+    bg = BaseGood.query.get(bg)
+    if current_user is None or bg is None:
+        return not_found()
+    log.info("Querying inventory for user {} and basegood {}".format(current_user.name, bg.name))
+    inv = Inventory.query.\
+                filter(Inventory.user_id == current_user.id).\
+                filter(Inventory.basegood_id == bg.id).all()
+    return jsonify({'basegood': basegood_schema.dump(bg), 'ammount': len(inv)})
+
+@app.route("/users/<int:usr>/inventory/producable/<int:pr>", methods=['GET'])
+def get_inventory_for_producable(usr, pr):
+    pr = Producable.query.get(pr)
+    current_user = User.query.get(usr)
+    if current_user is None or pr is None:
+        return not_found()
+    log.info("Querying inventory for user {} and producable {}".format(current_user.name, pr.name))
+    inv = Inventory.query.\
+                filter(Inventory.user_id == current_user.id).\
+                filter(Inventory.producable_id == pr.id).all()
+    return jsonify({'producable': producable_schema.dump(pr), 'ammount': len(inv)})
 
 @app.route("/users/<int:usr>/buildqueue", methods=['GET'])
 def get_buildqueue(usr):
     current_user = User.query.get(usr)
     if current_user is None:
-        return not_found()
+        return not_found(basegood_idbasegood_id  )
     log.info("Querying buildqueue for user {}".format(current_user.name))
     results = buildqueue_schema.dump(current_user.buildqueue)
     return jsonify({'buildqueue': results.data})
 
+@app.route("/users/<int:usr>/buildqueue/producable/<int:pr>", methods=['GET'])
+def get_buildqueue_for(usr,pr):
+    current_user = User.query.get(usr)
+    pr = Producable.query.get(pr)
+    if current_user is None or pr is None:
+        return not_found()
+    queue = BuildQueue.query.\
+            filter(BuildQueue.user_id == current_user.id).\
+            filter(BuildQueue.producable_id == pr.id).all()
+    return jsonify({'producable': buildqueue_schema.dump(queue).data, 'ammount': len(queue)})
 
 def info(title):
     print(title)

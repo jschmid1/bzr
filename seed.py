@@ -80,7 +80,7 @@ def seed_producables():
     log.debug("Seeding Producables")
     for pb in producables:
         if db_session.query(Producable).filter(Producable.name == pb).count() == 0:
-            prd = Producable(name=pb, price=randint(4,59), time=randint(1,10))
+            prd = Producable(name=pb, price=randint(4,59), time=randint(1,25))
             db_session.add(prd)
     db_session.commit()
 

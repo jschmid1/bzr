@@ -2,7 +2,7 @@ from api.database.db import Base, db_session
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship, backref
 from marshmallow import Schema, fields
-
+from collections import Counter
 
 class User(Base):
     __tablename__ = 'users'
@@ -95,9 +95,7 @@ class Producable(Base):
     def blueprint_dict(self):
         all_blueprint_entries = Blueprint.query.filter_by(producable_id=self.id).all()
         expanded = [ x.basegood for x in all_blueprint_entries ]
-        inf = {}
-        for i in range(1, len(expanded), 1):
-           inf[BaseGood.query.filter_by(id=i).first()] = expanded.count(expanded[i])
+        inf = dict(Counter(expanded))
         return inf
 
     def blueprint(self):
@@ -132,8 +130,6 @@ class InventorySchema(Schema):
     basegood = fields.Nested(BaseGoodSchema, exclude=('producable', ), default=None)
     producable = fields.Nested(ProducableSchema, exclude=('basegood', ), default=None) 
 
-# Who built what, when and when it's ready. Needs to be saved serverside
-# to avoid hax.
 class BuildQueue(Base):
     __tablename__ = 'buildqueue'
     id = Column(Integer, primary_key=True)

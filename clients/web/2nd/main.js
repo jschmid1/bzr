@@ -124,29 +124,12 @@ function get_user_info(id) {
     });
 }
 
-function handle_user_info(id) {
-    $(function(){
-        var promise = get_user_info(id);
-        promise.done(function(output) {
-            console.log(output);
-        });
-        promise.fail(function(output) {
-            var msg = output.responseText;
-            var html = $.templates("#alert").render(msg);
-            $('#container').append(html);
-        });
-    });
-}
-
 function handle_basegood_selling(id) {
     $(function(){
         var promise = sell_basegood(id);
         promise.done(function(output) {
-            // Trying to update the id here to have immdediate response to the click event.
-            // can't get the value here.. why?
-            var asd = $("#base_inv"+id).text();
-            console.log(output.message);
-            console.log(asd);
+            var inv_len = $("#base_inv_"+id).text();
+            $("#base_inv_"+id).html(parseInt(inv_len)-1)
         });
         promise.fail(function(output) {
             var msg = output.responseText;
@@ -162,14 +145,12 @@ function handle_producable_selling(id) {
     $(function(){
         var promise = sell_producable(id);
         promise.done(function(output) {
-            // Trying to update the id here to have immdediate response to the click event.
-            // can't get the value here.. why?
-            var inv_count = $("#prod_inv"+id).text();
-            console.log("inv lenght: " + inv_count);
-            console.log(output.message);
+            var inv_count = $("#prod_inv_"+id).text();
+            $("#prod_inv_"+id).html(parseInt(inv_count)-1)
         });
         promise.fail(function(output) {
             var msg = output.responseText;
+            console.log(output)
             var html = $.templates("#alert").render(msg);
             $('#container').append(html);
         });
@@ -180,15 +161,13 @@ function handle_basegood_buying(id) {
     $(function(){
         var promise = buy_basegood(id);
         promise.done(function(output) {
-            var inv_count = $("#"+id+"_inv_len").text();
-            $("#base_inv"+id).text(inv_count++);
-            console.log("inv lenght: " + inv_count)
+            var inv_count = $("#base_inv_"+id).text();
+            $("#base_inv_"+id).html(parseInt(inv_count)+1)
         });
         promise.fail(function(output) {
             var msg = output.responseText
             console.log(msg);
             var html = $.templates("#alert").render(msg);
-            console.log(html);
             $('#container').append(html);
         });
     });
@@ -198,8 +177,10 @@ function handle_producable_production(id) {
     $(function(){
         var promise = produce_producable(id);
         promise.done(function(output) {
+            var bqcnt = $("#inqueue_"+id).text();
+            $("#inqueue_"+id).html(parseInt(bqcnt)+1)
             // missing the unique identifier here..
-            progress(id, 1, output.producable.time); //jquery pseudo selector :last oder so
+            progress(id, 3, output.producable.time); //jquery pseudo selector :last oder so
         });
         promise.fail(function(output) {
             var msg = output.responseText;
@@ -216,7 +197,7 @@ function round_to(dec, number) {
 
 function progress(itemid, bqid, duration) {
     var sel = $("#pr_"+itemid+"_"+bqid)
-    sel.animate({ width: "100%" }, {queue: false, duration: (duration*60), complete: function() { sel.parent().remove(); }});
+    sel.animate({ width: "100%" }, {queue: false, duration: (duration*3600), complete: function() { sel.parent().remove(); }});
 }
 
 function init_struct() {
@@ -282,9 +263,17 @@ function init_struct() {
 
                 $.each(item.buildqueue, function(key, value) {
                     item.bqid = value.id;
-                    var html = $.templates("#buildqueue").render(item);
-                    $('#producable_'+item.id).append(html);
-                    progress(item.id, value.id, item.time)
+                    if ($("[id^=pr_"+item.id+"]").length <= 2) {
+                        if ($("#pr_"+item.id+"_"+value.id).length == 0) {
+                            var html = $.templates("#buildqueue").render(item);
+                            $('#producable_'+item.id).append(html);
+                            //st = new Date(value.time_start)
+                            st = new Date($.now())
+                            en = new Date(value.time_done)
+                            console.log(en-st) 
+                            progress(item.id, value.id, ((en-st) / 100 / 60 / 60))
+                        }
+                    }
                 });
             });
         });
@@ -328,12 +317,16 @@ function update_content(){
                 item.buildqueue = output.producable
             });
             $.each(item.buildqueue, function(key, value) {
-                if (!($("#pr_"+item.id+"_"+value.id).show())) {
-                    var html = $.templates("#buildqueue").render(value);
-                    $("#producable_"+item.id).append(html);
-                    console.log("creating new progressbar")
-                    console.log(item)
-                    progress(item.id, value.id, item.time)
+                if ($("[id^=pr_"+item.id+"]").length <= 2) {
+                    if (!($("#pr_"+item.id+"_"+value.id).length)) {
+                        item.bqid = value.id;
+                        var html = $.templates("#buildqueue").render(item);
+                        $('#producable_'+item.id).append(html);
+                        //st = new Date(value.time_start)
+                        st = new Date($.now())
+                        en = new Date(value.time_done)
+                        progress(item.id, value.id, ((en-st) / 100 / 60 / 60 ))
+                    }
                 }
             });
             $("#prod_price_"+item.id).text(round_to(2,item.price));
@@ -346,3 +339,41 @@ function update_content(){
     });
 }
 window.onload = init_struct;
+
+
+   
+var connection = new autobahn.Connection({
+   url: "ws://127.0.0.1:8080/ws",
+   realm: "realm1"
+});
+
+
+// fired when connection is established and session attached
+//
+connection.onopen = function (session, details) {
+
+   console.log("Connected");
+
+   // SUBSCRIBE to a topic and receive events
+   //
+   session.subscribe('com.example.ark', on_counter).then(
+      function (sub) {
+         console.log('subscribed to topic');
+      },
+      function (err) {
+         console.log('failed to subscribe to topic', err);
+      }
+   );
+   function on_counter (args) {
+      var counter = args[0];
+      console.log(args)
+      console.log("on_counter() event received with counter " + counter);
+   }
+   
+}
+
+connection.onclose = function (reason, details) {
+   console.log("Connection lost: " + reason);
+}
+
+connection.open();

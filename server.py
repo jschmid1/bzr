@@ -16,6 +16,10 @@ from multiprocess import Process
 import os
 import calculations
 import time
+from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
+from asyncio import sleep
+from asyncio import coroutine
+import multiprocessing
 
 log.debug("Initializing Database")
 init_db()
@@ -412,8 +416,8 @@ def sell_producable(pr):
     producable = Producable.query.get(pr)
     if producable is None:
         return not_found()
-    log.info("Selling {}".format(producable.name))
     if producable in current_user.inv_expanded():
+        log.info("Selling {}".format(producable.name))
         inv = Inventory.query.\
                             filter(Inventory.user_id == current_user.id).\
                             filter(Inventory.producable_id == producable.id).\
@@ -510,47 +514,32 @@ def get_buildqueue_for(usr,pr):
             filter(BuildQueue.producable_id == pr.id).all()
     return jsonify({'producable': buildqueue_schema.dump(queue).data, 'ammount': len(queue)})
 
-def info(title):
-    print(title)
-    print('module name:', __name__)
-    if hasattr(os, 'getppid'):  # only available on Unix
-        print('parent process:', os.getppid())
-    print('process id:', os.getpid())
+class MyComponent(ApplicationSession):
+    @coroutine
+    def onJoin(self, details):
+        print("session ready")
+
+        while True:
+            bg = {1: "ark"}
+            self.publish(u'com.example.ark', bg)
+            yield from sleep(1)
 
 def run_server():
     app.run(debug=True)
 
-
-def process_buildqueue():
-    while(1):
-        log.debug("Checking buildqueue..")
-        queue = BuildQueue.query.all()
-        for itm in queue:
-            now = datetime.datetime.now()
-            if now >= itm.time_done:
-                inv = Inventory(basegood_id=None,
-                                producable_id=itm.producable_id,
-                                user_id=itm.user_id)
-                prod_name = Producable.query.get(itm.producable_id).name
-                user_name = User.query.get(itm.user_id).name
-                log.info("{} finished building.".format(prod_name))
-                log.info("Adding {} to {}'s inventory".format(prod_name, user_name))
-                db_session.delete(itm)
-                log.info("Deleting #{} from buildqueue".format(itm.id))
-                db_session.add(inv)
-                db_session.commit()
-        time.sleep(3)
-
-
+def run_wamp():
+    runner = ApplicationRunner(url=u"ws://localhost:8080/ws", realm=u"realm1")
+    runner.run(MyComponent)
+    
 if __name__ == '__main__':
-    info('main line')
-    #p = Process(target=process_buildqueue)
-    #p_two = Process(target=run_server)
-    #p_two.start()
-    #p_two.join()
-    run_server()
-    #p.start()
-    #p.join()
+    n = multiprocessing.Process(name='wamp', target=run_wamp)
+    n.daemon = False
+    d = multiprocessing.Process(name='app', target=run_server)
+    d.daemon = True
+
+    d.start()
+    time.sleep(1)
+    n.start()
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):

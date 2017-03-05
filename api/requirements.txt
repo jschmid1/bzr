@@ -1,3 +1,4 @@
+tox
 flask
 flask_restful
 flask_testing

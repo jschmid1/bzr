@@ -5,6 +5,7 @@ addons:
   sources:
     - ubuntu-toolchain-r-test
   packages:
+    - tox
     - gcc-4.8
     - python-dev
 before_install:

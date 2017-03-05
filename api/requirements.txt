@@ -12,5 +12,3 @@ behave
 pyyaml
 flask_cors
 multiprocess
-crossbar
-autobahn-[asyncio]

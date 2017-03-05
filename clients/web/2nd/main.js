@@ -133,9 +133,8 @@ function handle_basegood_selling(id) {
         });
         promise.fail(function(output) {
             var msg = output.responseText;
-            var html = $.templates("#alert").render(msg);
-            console.log(msg);
-            console.log(html);
+            var html = $.templates("#alert").render(JSON.parse(msg));
+            console.log(html)
             $('#container').append(html);
         });
     });
@@ -151,7 +150,7 @@ function handle_producable_selling(id) {
         promise.fail(function(output) {
             var msg = output.responseText;
             console.log(output)
-            var html = $.templates("#alert").render(msg);
+            var html = $.templates("#alert").render(JSON.parse(msg));
             $('#container').append(html);
         });
     });
@@ -167,7 +166,7 @@ function handle_basegood_buying(id) {
         promise.fail(function(output) {
             var msg = output.responseText
             console.log(msg);
-            var html = $.templates("#alert").render(msg);
+            var html = $.templates("#alert").render(JSON.parse(msg));
             $('#container').append(html);
         });
     });
@@ -181,12 +180,14 @@ function handle_producable_production(id) {
             $("#inqueue_"+id).html(parseInt(bqcnt)+1)
             // missing the unique identifier here..
             progress(id, 3, output.producable.time); //jquery pseudo selector :last oder so
+            var html = $.templates("#success").render({message: "Enqueued "+output.producable.name});
+            $('#container').append(html);
+            
         });
         promise.fail(function(output) {
             var msg = output.responseText;
-            var html = $.templates("#alert").render(msg);
+            var html = $.templates("#alert").render(JSON.parse(msg));
             $('#container').append(html);
-            alert(msg);
         });
     });
 }
@@ -263,7 +264,7 @@ function init_struct() {
 
                 $.each(item.buildqueue, function(key, value) {
                     item.bqid = value.id;
-                    if ($("[id^=pr_"+item.id+"]").length <= 2) {
+                    if ($("[id^=pr_"+item.id+"]").length <= 1) {
                         if ($("#pr_"+item.id+"_"+value.id).length == 0) {
                             var html = $.templates("#buildqueue").render(item);
                             $('#producable_'+item.id).append(html);
@@ -317,7 +318,7 @@ function update_content(){
                 item.buildqueue = output.producable
             });
             $.each(item.buildqueue, function(key, value) {
-                if ($("[id^=pr_"+item.id+"]").length <= 2) {
+                if ($("[id^=pr_"+item.id+"]").length <= 1) {
                     if (!($("#pr_"+item.id+"_"+value.id).length)) {
                         item.bqid = value.id;
                         var html = $.templates("#buildqueue").render(item);
@@ -337,43 +338,8 @@ function update_content(){
     producable.fail(function(output) {
         console.log(output)
     });
+    $(".alert").delay(4000).slideUp(200, function() {
+            $(this).alert('close');
+    });
 }
 window.onload = init_struct;
-
-
-   
-var connection = new autobahn.Connection({
-   url: "ws://127.0.0.1:8080/ws",
-   realm: "realm1"
-});
-
-
-// fired when connection is established and session attached
-//
-connection.onopen = function (session, details) {
-
-   console.log("Connected");
-
-   // SUBSCRIBE to a topic and receive events
-   //
-   session.subscribe('com.example.ark', on_counter).then(
-      function (sub) {
-         console.log('subscribed to topic');
-      },
-      function (err) {
-         console.log('failed to subscribe to topic', err);
-      }
-   );
-   function on_counter (args) {
-      var counter = args[0];
-      console.log(args)
-      console.log("on_counter() event received with counter " + counter);
-   }
-   
-}
-
-connection.onclose = function (reason, details) {
-   console.log("Connection lost: " + reason);
-}
-
-connection.open();

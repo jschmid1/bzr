@@ -279,7 +279,9 @@ def trigger_build(pr):
                                  producable_id=producable.id,
                                  time_start=datetime.datetime.utcnow(),
                                  time_done=datetime.datetime.utcnow() +
-                                 datetime.timedelta(minutes=producable.time))
+                                 datetime.timedelta(minutes=producable.time),
+                                 active=False,
+                                 processed=False)
         db_session.add(build_queue)
         db_session.commit()
         result = producable_schema.dump(producable)
@@ -510,36 +512,24 @@ def get_buildqueue_for(usr,pr):
     if current_user is None or pr is None:
         return not_found()
     queue = BuildQueue.query.\
+            filter(BuildQueue.processed == False).\
             filter(BuildQueue.user_id == current_user.id).\
             filter(BuildQueue.producable_id == pr.id).all()
     return jsonify({'producable': buildqueue_schema.dump(queue).data, 'ammount': len(queue)})
 
-class MyComponent(ApplicationSession):
-    @coroutine
-    def onJoin(self, details):
-        print("session ready")
-
-        while True:
-            bg = {1: "ark"}
-            self.publish(u'com.example.ark', bg)
-            yield from sleep(1)
 
 def run_server():
     app.run(debug=True)
 
-def run_wamp():
-    runner = ApplicationRunner(url=u"ws://localhost:8080/ws", realm=u"realm1")
-    runner.run(MyComponent)
-    
 if __name__ == '__main__':
-    n = multiprocessing.Process(name='wamp', target=run_wamp)
-    n.daemon = False
+    #n = multiprocessing.Process(name='wamp', target=run_wamp)
+    #n.daemon = False
     d = multiprocessing.Process(name='app', target=run_server)
-    d.daemon = True
+    d.daemon = False
 
     d.start()
-    time.sleep(1)
-    n.start()
+    #time.sleep(1)
+    #n.start()
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):

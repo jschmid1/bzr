@@ -1,5 +1,5 @@
 from api.database.db import Base, db_session
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship, backref
 from marshmallow import Schema, fields
 from collections import Counter
@@ -138,6 +138,9 @@ class BuildQueue(Base):
     producable = relationship("Producable")
     time_done = Column(DateTime)
     time_start = Column(DateTime)
+    active = Column(Boolean)
+    # In case the server goes down, you can't judge if the itm was already processed
+    processed = Column(Boolean)
 
 class BuildQueueSchema(Schema):
     id = fields.Int(dump_only=True)
@@ -219,7 +222,7 @@ class Effect(Base):
     description = Column(String(500))
     # how to actually create events?
     # callbacks? but then how to map them to the corresponding class
-    # map functions rathen then a simple name and description
+    # map functions rather than a simple name and description
     def __repr__(self):
         return '<Effect %r>' % (self.name)
 

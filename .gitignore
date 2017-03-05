@@ -13,3 +13,6 @@ MANIFEST
 junit-*.xml
 build/
 *.so
+.idea/
+tags
+dist/

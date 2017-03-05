@@ -3,4 +3,4 @@ Feature: What is needed for the producable
         Given The system is set up properly 
         Then I ask for the blueprint of the producables 1
         Then I should get a 200 response
-        And I see a list of basegoods in producable
+        And I see a list of basegoods

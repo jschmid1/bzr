@@ -153,10 +153,10 @@ def step_impl(context, resource, res_id):
 def step_impl(context, expected_status_code):
     context.response.status_code.should.eql(int(expected_status_code))
 
-@then(u'I see a list of basegoods in {outer}')
-def step_impl(context, outer):
+@then(u'I see a list of basegoods')
+def step_impl(context):
     data = context.response.data
-    payload = json.loads(data.decode('utf-8'))[outer]
+    payload = json.loads(data.decode('utf-8'))
     payload.should.be.a(list)
 
 @then(u'I see a nested list of {resources} in {outer}')

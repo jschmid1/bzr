@@ -16,9 +16,6 @@ from multiprocess import Process
 import os
 import calculations
 import time
-from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
-from asyncio import sleep
-from asyncio import coroutine
 import multiprocessing
 
 log.debug("Initializing Database")

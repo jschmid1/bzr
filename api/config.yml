@@ -1,27 +1,105 @@
-Basegoods:
-  - Iron
-  - Wood
-  - Oil
-  - Water
+Items:
+  - Iron:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Wood:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Oil:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Water:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Chemicals:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Brinestone:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Salt:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Sulfur:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Coal:
+      category: 0
+      init_price: 1
+      time: 0.0
+  - Air:
+      category: 0
+      time: 0.0
+      init_price: 1
+  - Sand:
+      category: 0
+      time: 2.0
+      init_price: 1
+  - Steel:
+      category: 1
+      time: 2.0
+      init_price: 1
+  - Hammer:
+      category: 1
+      init_price: 1
+      time: 2.0
+  - Chair:
+      category: 1
+      init_price: 1
+      time: 2.0
+  - Planks:
+      category: 1
+      init_price: 1
+      time: 2.0
+  - Table:
+      category: 1
+      init_price: 1
+      time: 2.0
 
-    # missing TIME
-Producables:
-  - Tool
-  - Machine
-  - Stuff
+Categories:
+  - 0:
+      desc: "Base goods"
+  - 1:
+      desc: "Tier one"
+  - 2:
+      desc: "Tier two"
 
-
-Tool: 
-  - Iron: 2
-  - Wood: 1
-
-Machine:
-  - Iron: 5
-  - Water: 1
-  - Oil: 10
+Blueprint:
+  - Table:
+      needs:
+        Planks: 1
+        Steel: 2
+        Water: 1
+        Hammer: 1
+  - Steel:
+      needs:
+        Water: 1
+        Wood: 1
+        Iron: 1
+        Sulfur: 1
+        Sand: 1
+  - Hammer:
+      needs:
+        Steel: 2
+        Wood: 3
+  - Chair:
+      needs:
+        Hammer: 1
+        Steel: 3
+        Wood: 2
+  - Planks:
+      needs:
+        Hammer: 1
+        Wood: 2
   
-Stuff:
-  - Wood: 1
 #Effects:
 #  - FastProduction:
 #      - description: that

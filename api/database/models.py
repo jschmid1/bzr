@@ -10,14 +10,14 @@ class User(Base):
     name = Column(String(50), unique=True)
     email = Column(String(120), unique=True)
     password = Column(String(12))
-    balance = Column(Float())
+    balance = Column(Float() )
     inventory = relationship("Inventory")
     buildqueue = relationship("BuildQueue")
     season_id = Column(Integer, ForeignKey('seasons.id'))
     season = relationship('Season')
 
     def inv_expanded(self):
-        return [ inv.basegood if inv.basegood else inv.producable for inv in self.inventory ]
+        return [ inv.item for inv in self.inventory ]
 
     def has_enough_money_for(self, item):
         if self.balance >= item.price:
@@ -37,114 +37,114 @@ class UserSchema(Schema):
     name = fields.Str()
     balance = fields.Float()
 
-
-class BaseGood(Base):
-    __tablename__ = 'basegoods'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), unique=True)
-    initprice = Column(Float)
-    price = Column(Float)
-    producable = relationship('Producable', secondary='blueprints', backref='basegoods', lazy="joined")
-
-    def __repr__(self):
-        return '<BaseGood %r>' % (self.name)
-
-
-class ProducableSchema(Schema):
-    id = fields.Int(dump_only=True)
-    name = fields.Str()
-    price = fields.Float()
-    time = fields.Int()
-    #basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
-
-
 class BlueprintSchema(Schema):
     id = fields.Int(dump_only=True)
-    basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
+    items = fields.Nested('ItemSchema', many=True, default=None)
 
-class BaseGoodSchema(Schema):
-    id = fields.Int(dump_only=True)
-    name = fields.Str()
-    initprice = fields.Float()
-    price = fields.Float()
-    time = fields.DateTime()
-    #producable = fields.Nested(ProducableSchema, many=True, exclude=('basegoods', ), default=None)
+class Category(Base):
+    __tablename__ = 'categories'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50))
+    desc = Column(String(500))
 
-
-class CapabilitiesSchema(Schema):
-    id = fields.Int(dump_only=True)
-    name = fields.Str()
-    initprice = fields.Float()
-    price = fields.Float()
-    time = fields.DateTime()
-    producable = fields.Nested(ProducableSchema, many=True, exclude=('basegoods', ), default=None)
-
-
-class Producable(Base):
-    __tablename__ = 'producables'
+class Item(Base):
+    __tablename__ = 'items'
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True)
-    price = Column(Float)
-    time = Column(Integer)
-    # If .blueprint returns a blueprint object. Do it with callbacks?
-    #blueprint = relationship('BaseGood', secondary='blueprints', backref='producables', lazy="joined")
+    # that doesn't work yet..
+    category = relationship(Category) #rel
+    category_id = Column(Integer, ForeignKey('categories.id'))
+    init_price = Column(Float)
+    price = Column(Float) 
+    time = Column(Float)
+    # That only returns one :/
+    #blueprint = relationship("Blueprint", back_populates="items", foreign_keys="[Blueprint.item_id]")
 
     def __repr__(self):
-        return '<Producable %r>' % (self.name)
+        return '<Item %r>' % (self.name)
 
-    def blueprint_dict(self):
-        all_blueprint_entries = Blueprint.query.filter_by(producable_id=self.id).all()
-        expanded = [ x.basegood for x in all_blueprint_entries ]
-        inf = dict(Counter(expanded))
+
+    def is_made_of(self):
+        # That's just dumb thoug.. back_populate should be enough
+        items = Blueprint.query.filter_by(item_id=self.id).all()
+        return [itm.needs_item for itm in items]
+
+    def is_made_of_counter(self):
+        # That's just dumb thoug.. back_populate should be enough
+        items = Blueprint.query.filter_by(item_id=self.id).all()
+        items = [itm.needs_item for itm in items]
+        inf = dict(Counter(items))
         return inf
 
-    def blueprint(self):
-        all_blueprint_entries = Blueprint.query.filter_by(producable_id=self.id).all()
-        return [ x.basegood for x in all_blueprint_entries ]
+    def price_gen(self):
+        blueprint = self.is_made_of_counter()
+        if blueprint:
+            price = 0
+            for item, count in blueprint.items():
+                for i in range(count):
+                    price += item.price
+        return price
+
+        
 
 class Blueprint(Base):
     __tablename__ = 'blueprints'
     id = Column(Integer, primary_key=True)
-    basegood_id = Column(Integer, ForeignKey('basegoods.id'))
-    producable_id = Column(Integer, ForeignKey('producables.id'))
-    basegood = relationship(BaseGood, backref='blueprint', lazy='joined')
+    item_id = Column(Integer, ForeignKey('items.id'))
+    needs = Column(Integer, ForeignKey('items.id'))
+    #items = relationship("Item", back_populates="blueprint", foreign_keys=[needs])
+    needs_item = relationship(Item, backref='blueprint', lazy='joined', foreign_keys=[needs])
 
+class ItemSchema(Schema):
+    id = fields.Int(dump_only=True)
+    name = fields.Str()
+    category_id = fields.Str()
+    initprice = fields.Float()
+    price = fields.Float()
+    time = fields.DateTime()
+
+class CapabilitiesSchema(Schema):
+#TODO: Fix .. doesn't work right now
+    id = fields.Int(dump_only=True)
+    name = fields.Str()
+    initprice = fields.Float()
+    price = fields.Float()
+    time = fields.DateTime()
+    producable = fields.Nested(ItemSchema, many=True, default=None)
 
 class Inventory(Base):
+    # nice spelling ..
     __tablename__ = 'inventorys'
     id = Column(Integer, primary_key=True)
-    basegood_id = Column(Integer, ForeignKey('basegoods.id'))
-    producable_id = Column(Integer, ForeignKey('producables.id'))
+    item_id = Column(Integer, ForeignKey('items.id'))
     user_id = Column(Integer, ForeignKey('users.id'))
-    basegood = relationship(BaseGood, backref='inventory', lazy='joined')
-    producable = relationship(Producable, backref='inventory', lazy='joined')
+    item = relationship(Item, backref='inventory', lazy='joined')
+    #item_id = Column(Integer, ForeignKey('items.id'))
+    #item = relationship('Item')
 
     def __repr__(self):
-        if self.basegood:
-            return '%r' % (self.basegood)
-        else: 
-            return '%r' % (self.producable)
-#TODO
+        return '%r' % (self.item)
+
 class InventorySchema(Schema):
     id = fields.Int(dump_only=True)
-    basegood = fields.Nested(BaseGoodSchema, exclude=('producable', ), default=None)
-    producable = fields.Nested(ProducableSchema, exclude=('basegood', ), default=None) 
+    item = fields.Nested(ItemSchema, default=None)
 
 class BuildQueue(Base):
     __tablename__ = 'buildqueue'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
-    producable_id = Column(Integer, ForeignKey('producables.id'))
-    producable = relationship("Producable")
+    item_id = Column(Integer, ForeignKey('items.id'))
+    item = relationship('Item')
     time_done = Column(DateTime)
     time_start = Column(DateTime)
+    # To track history without comparing time. more efficient?
     active = Column(Boolean)
     # In case the server goes down, you can't judge if the itm was already processed
     processed = Column(Boolean)
 
 class BuildQueueSchema(Schema):
     id = fields.Int(dump_only=True)
-    producable = fields.Nested(ProducableSchema, exclude=('basegood', ), default=None) 
+    item = fields.Nested(ItemSchema, default=None) 
     time_done = fields.Date()
     time_start = fields.Date()
 
@@ -153,7 +153,7 @@ class Season(Base):
     id = Column(Integer, primary_key=True)
     season_start = Column(DateTime)
     season_end = Column(DateTime)
-    pmap = relationship('Map')
+    _map = relationship('Map')
 
     def __repr__(self):
         return '<Season %r>' % (self.id)
@@ -167,19 +167,19 @@ class SeasonSchema(Schema):
 class Map(Base):
     __tablename__ = 'maps'
     id = Column(Integer, primary_key=True)
-    basegood_id = Column(Integer, ForeignKey('basegoods.id'))
-    basegood = relationship('BaseGood')
+    item_id = Column(Integer, ForeignKey('items.id'))
+    item = relationship('Item')
     initial_ammount = Column(Integer)
     ammount = Column(Integer)
     season_id = Column(Integer, ForeignKey('seasons.id'))
     season = relationship('Season')
 
     def __repr__(self):
-        return '<Map Info for %r>' % (self.basegood)
+        return '<Map Info for %r>' % (self.item)
 
 class MapSchema(Schema):
     id = fields.Int(dump_only=True)
-    basegoods = fields.Nested('BaseGoodSchema', many=True, exclude=('producable', ), default=None)
+    item = fields.Nested('ItemSchema', many=True, default=None)
     ammount = fields.Int()
 
 class Technology(Base):

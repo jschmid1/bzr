@@ -1,6 +1,6 @@
 from faker import Factory
 from random import randint
-from api.database.models import User, BaseGood, Producable, Blueprint, Inventory, Season, BuildQueue, Map, Effect, Event, Technology, EffectEvent, EffectTechnology 
+from api.database.models import User, Item, Blueprint, Inventory, Season, BuildQueue, Map, Effect, Event, Technology, EffectEvent, EffectTechnology, Category
 from api.database.db import db_session, init_db, db_path
 from api.logger.logger import log
 from api.map_gen import MapGen
@@ -19,12 +19,13 @@ with open("api/config.yml", 'r') as stream:
     except yaml.YAMLError as exc:
         print(exc)
 
-basegoods = blueprints['Basegoods']
-producables = blueprints['Producables']
+items = blueprints['Items']
+bp = blueprints['Blueprint']
 max_users = blueprints['max_users']
 events = blueprints['Events']
 technologies = blueprints['Technologies']
 effects = blueprints['Effects']
+categories = blueprints['Categories']
 
 def seed_events():
     if len(db_session.query(Event).all()) <= 0:
@@ -56,33 +57,35 @@ def seed_users():
             db_session.add(usr)
     db_session.commit()
 
+def seed_categories():
+    log.debug("Seed categories")
+    for category in categories:
+        for k, v in category.items():
+            if db_session.query(Category).filter(Category.name == k).count() == 0:
+                cat_o = Category(name=k, desc=v['desc'])
+                db_session.add(cat_o)
+    db_session.commit()
 
-def add_basegood_to_inv(user_id, bg_id):
+def seed_items():
+    log.debug("Seeding items")
+    for bg in items:
+        for k, v in bg.items(): 
+            if db_session.query(Item).filter(Item.name == k).count() == 0:
+                item = Item(name=k,
+                                    price = v['init_price'],
+                                    init_price = v['init_price'],
+                                    time = v['time'],
+                                    category_id=v['category'])
+                db_session.add(item)
+    db_session.commit()
+
+def add_item_to_inv(user_id, bg_id):
     user = db_session.query(User).filter(User.id == user_id).first()
-    bg = BaseGood.query.get(1)
-    new_inv = Inventory(basegood=bg, user_id=user.id, producable_id=None)
+    bg = Item.query.get(1)
+    new_inv = Inventory(item=bg, user_id=user.id)
     db_session.add(new_inv)
     db_session.commit()
 
-
-def seed_basegoods():
-    log.debug("Seeding Basegoods")
-    for bg in basegoods:
-        if db_session.query(BaseGood).filter(BaseGood.name == bg).count() == 0:
-            basegood = BaseGood(name=bg,
-                                initprice=randint(1, 25),
-                                price=randint(4, 59))
-            db_session.add(basegood)
-    db_session.commit()
-
-
-def seed_producables():
-    log.debug("Seeding Producables")
-    for pb in producables:
-        if db_session.query(Producable).filter(Producable.name == pb).count() == 0:
-            prd = Producable(name=pb, price=randint(4,59), time=randint(5,10))
-            db_session.add(prd)
-    db_session.commit()
 
 def seed_effects():
     if len(db_session.query(Effect).all()) <= 0:
@@ -100,22 +103,16 @@ def seed_effects():
 def create_links():
     log.debug("Creating Blueprints")
     if len(db_session.query(Blueprint).all()) <= 0:
-        for prod in producables:
-            # find producable by name -> get id
-            # lookup in table to get the ammount and type
-            # iterate over the basegoods
-            # get quantity from table 
-            prod_o = db_session.query(Producable).filter(Producable.name == prod).first()
-            for bg in blueprints[prod]:
-                #bg_name, quant = bg.items()[0] 
-                # rather stupid python3
-                bg_name = list(bg.keys())[0]
-                quant = bg[bg_name]
-                basegood_o = BaseGood.query.filter(BaseGood.name == bg_name).first()
-                for i in range(quant):
-                   blueprint = Blueprint(basegood_id=basegood_o.id, producable_id=prod_o.id)
-                   db_session.add(blueprint)
-        db_session.commit()
+            for dct in bp:
+                for item, recipe in dct.items():
+                    recipe = recipe['needs']
+                    item_o = Item.query.filter(Item.name == item).first()
+                    for made_of, quant in recipe.items():
+                        made_of_o = Item.query.filter(Item.name == made_of).first()
+                        for i in range(quant):
+                            blueprint = Blueprint(item_id=item_o.id, needs=made_of_o.id)
+                            db_session.add(blueprint)
+    db_session.commit()
 
 def link_effect_event():
     log.debug("Linking Effects with Events")
@@ -141,13 +138,14 @@ def link_effect_technology():
 
 def fill_inventory():
     log.debug("Filling user inventories")
-    for bg in basegoods:
-        if db_session.query(Inventory).filter(BaseGood.name == bg).count() <= 0:
-            basegood = BaseGood.query.filter(BaseGood.name == bg).first()
-            all_users = User.query.all()
-            for user in all_users:
-                new_inv = Inventory(basegood=basegood, user_id=user.id, producable_id=None)
-                db_session.add(new_inv)
+    for raw in items:
+        for name, info in raw.items():
+            if db_session.query(Inventory).filter(Item.name == name).count() <= 0:
+                item = Item.query.filter(Item.name == name).first()
+                all_users = User.query.all()
+                for user in all_users:
+                    new_inv = Inventory(item=item, user_id=user.id)
+                    db_session.add(new_inv)
     db_session.commit()
 
 
@@ -168,21 +166,21 @@ def adding_seasons():
 def adding_map():
     log.debug("Generating a map")
     if Map.query.count() < 1:
-        all_baseg = BaseGood.query.all()
+        all_items = Item.query.all()
         season = Season.query.first()
-        map_o = MapGen(season, basegoods=all_baseg)
+        map_o = MapGen(season, items=all_items)
         map_o.generate()
 
 
 def seed_all():
+        seed_categories()
         seed_effects()
         seed_events()
         seed_technology()
         seed_users()
         link_effect_technology()
         link_effect_event()
-        seed_basegoods()
-        seed_producables()
+        seed_items()
         create_links()
         fill_inventory()
         adding_seasons()

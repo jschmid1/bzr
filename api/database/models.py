@@ -65,12 +65,12 @@ class Item(Base):
 
 
     def is_made_of(self):
-        # That's just dumb thoug.. back_populate should be enough
+        # That's just dumb though.. back_populate should be enough
         items = Blueprint.query.filter_by(item_id=self.id).all()
         return [itm.needs_item for itm in items]
 
     def is_made_of_counter(self):
-        # That's just dumb thoug.. back_populate should be enough
+        # That's just dumb though.. back_populate should be enough
         items = Blueprint.query.filter_by(item_id=self.id).all()
         items = [itm.needs_item for itm in items]
         inf = dict(Counter(items))
@@ -78,8 +78,9 @@ class Item(Base):
 
     def price_gen(self):
         blueprint = self.is_made_of_counter()
+        price = self.price
         if blueprint:
-            price = 0
+            #price = 0
             for item, count in blueprint.items():
                 for i in range(count):
                     price += item.price

@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_restful import Api
-from flask.ext.autodoc import Autodoc
+from flask_autodoc import Autodoc
 import datetime
 from api.database.db import init_db, db_session
 from api.logger.logger import log
@@ -309,85 +309,120 @@ def handle_items_put(itm):
         return not_found()
 
 
+class Wrap(object):
 
-def buy_item(bg):
-    current_user = User.query.get(1)
-    item = Item.query.get(bg)
-    if item is None:
-        return not_found()
-    log.info("Buying {}".format(item.name))
-    pmap = current_user.season._map
-    # Find the map object that has pmap.item.name => item.name
-    if pmap:
-        corresp_map_object = [map_o for map_o in pmap if map_o.item.name == item.name][0]
-        if current_user.has_enough_money_for(item):
-            # and if item is still available -> check map_resoources
-            # Change when bulk buys are implemented
-            if corresp_map_object.ammount < 1:
-                return resource_exceeded()
-            corresp_map_object.ammount -= 1
-            inv = Inventory(user_id=current_user.id, item=item)
-            current_user.inventory.append(inv)
-            current_user.balance -= item.price
-            try:
-                db_session.commit()
-                results = item_schema.dump(item)
-                corresponding_map_object = [ x for x in pmap if x.id == bg ][0]
-                new_price = calculations.new_price_test1(corresponding_map_object.initial_ammount, corresponding_map_object.ammount, item.init_price)
-                item.price = new_price
-                db_session.commit()
-                return jsonify({'message': 'bought',
-                                'item': results.data})
-            except:
-                return service_unavailable()
-        else:
+    def __init__(self, item_id, user_id):
+        self._item_id = item_id
+        self._user_id = user_id
+        self.o_item = self.o_item()
+        self.o_user = self.o_user()
+        self.o_map = self.o_map() 
+        
+    def o_user(self):
+        user =  User.query.get(self._user_id)
+        if not user:
+            return not_found()
+        return user
+
+    def o_item(self):
+        item = Item.query.get(self._item_id)
+        if not item:
+            return not_found()
+        return item
+
+    def gen_inv_for_item(self):
+        """
+        Generates an <Inventory> object for <Item>
+        """
+        return Inventory(user_id=self._user_id, item=self.o_item)
+
+    def o_map(self):
+        _map = self.o_user.season._map
+        if not _map:
+            # TODO: own raise
+            return not_found()
+        return _map
+
+    def map_item(self):
+        """
+        The Map<Item> object from the database
+        """
+        return [map_o for map_o in self.o_map if map_o.item.name == self.o_item.name][0]
+
+    def buy_item(self):
+        log.info("Buying {}".format(self.o_item.name))
+        if not self.o_user.has_enough_money_for(self.o_item):
             return insufficient_funds()
-    else:
+        map_item = self.map_item()
+        if map_item.ammount < 1:
             return resource_exceeded()
+        map_item.ammount -= 1
+        self.o_user.inventory.append(self.gen_inv_for_item())
+        self.o_user.balance -= self.o_item.price
+        try:
+            new_price = calculations.new_price_test1(map_item.initial_ammount, map_item.ammount, self.o_item.init_price)
+            self.o_item.price = new_price
+            results = item_schema.dump(self.o_item)
+            return jsonify({'message': 'bought',
+                            'item': results.data})
+        except:
+            return service_unavailable()
+        finally:
+            db_session.commit()
 
+    def get_item_from_inventory(self):
+        return Inventory.query.filter(Inventory.user_id == self.o_user.id).\
+                               filter(Inventory.item_id == self.o_item.id).\
+                               first()
 
-def sell_item(bg):
-    current_user = User.query.get(1)
-    item = Item.query.get(bg)
-    pmap = current_user.season._map
-    if item is None:
-        return not_found()
-    log.info("Selling {}".format(item.name))
-    if item in current_user.inv_expanded():
-        inv = Inventory.query.\
-                            filter(Inventory.user_id == current_user.id).\
-                            filter(Inventory.item_id == item.id).\
-                            first()
-        Inventory.query.filter_by(id=inv.id).delete()
+    def delete_item_from_inventory(self, _id):
         # .delete() is designed to bulk delete
         # .limit() does not work
         # .first() does not work
         # how to savely delete only one item? this is bad..
+        Inventory.query.filter_by(id=_id).delete()
+
+
+    def sell_item(self):
+        log.info("Selling {}".format(self.o_item.name))
+        if not self.o_item in self.o_user.inv_expanded():
+            return not_in_inv()
+        inv = self.get_item_from_inventory()
+        self.delete_item_from_inventory(inv.id)
         try:
-            current_user.balance += item.price_gen()
-            if pmap:
-                corresp_map_object = [map_o for map_o in pmap if map_o.item.name == item.name][0]
-            corresp_map_object.ammount += 1
-            results = item_schema.dump(item)
-            db_session.commit()
-            corresponding_map_object = [ x for x in pmap if x.id == bg ][0]
-            if int(item.category) == 0:
-                new_price = calculations.new_price_test1(corresponding_map_object.initial_ammount, corresponding_map_object.ammount, item.init_price)
-                item.price = new_price
-            db_session.commit()
-            update_prices(item)
+            self.o_user.balance += self.o_item.price_gen()
+            map_item = self.map_item()
+            map_item.ammount += 1
+            # Category 0 meaning it's a base product that is not made of anything
+            #                 .category returns None -> #FIXME
+            results = item_schema.dump(self.o_item)
             return jsonify({'message': 'sold',
                             'item': results.data})
         except:
             return service_unavailable()
-    else:
-        return not_in_inv()
+        finally:
+            # Update the prices and write to db later
+            if int(self.o_item.category_id) == 0:
+                new_price = calculations.new_price_test1(map_item.initial_ammount, map_item.ammount, self.o_item.init_price)
+                self.o_item.price = new_price
+            update_prices(self.o_item)
+            db_session.commit()
+
+def buy_item(bg):
+    user_id = 1
+    wrap = Wrap(bg, user_id)
+    return wrap.buy_item()
+
+def sell_item(bg):
+    user_id = 1
+    wrap = Wrap(bg, user_id)
+    return wrap.sell_item()
 
 def update_prices(basegood):
     # that needs to be handled inside price_gen
     # with a recursive function call.
     # because it has to go down until category == 0
-    if int(basegood.category) > 0:
+    if int(basegood.category_id) > 0:
         log.info("Updating prices after action on {}".format(basegood.name))
         basegood.price = basegood.price_gen()
         db_session.commit()

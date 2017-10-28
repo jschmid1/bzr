@@ -2,6 +2,7 @@ tox
 flask
 flask_restful
 flask_testing
+flask_autodoc
 sqlalchemy
 Faker
 marshmallow
